@@ -4,6 +4,7 @@ const {
   getUserReservations,
   getAdminReservations,
   updateAdminReservation,
+  updateReservationStatus,
   updateUserReservation,
   cancelUserReservation,
   getReservationStats,
@@ -24,6 +25,7 @@ router.delete('/:id', cancelUserReservation);
 // Admin routes
 router.get('/admin', authorize('admin'), getAdminReservations);
 router.get('/admin/stats', authorize('admin'), getReservationStats);
+router.patch('/admin/:id/status', authorize('admin'), updateReservationStatus);
 router.put('/admin/:id', authorize('admin'), updateAdminReservation);
 
 module.exports = router;

@@ -409,6 +409,76 @@ const updateUserReservation = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Update reservation status only (Admin)
+// @route   PATCH /api/reservations/admin/:id/status
+// @access  Private/Admin
+const updateReservationStatus = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({
+      success: false,
+      message: 'Status is required',
+    });
+  }
+
+  const validStatuses = ['confirmed', 'seated', 'completed', 'cancelled', 'no-show'];
+
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid status. Valid statuses are: ${validStatuses.join(', ')}`,
+    });
+  }
+
+  const reservation = await Reservation.findById(req.params.id);
+
+  if (!reservation) {
+    return res.status(404).json({
+      success: false,
+      message: 'Reservation not found',
+    });
+  }
+
+  // Handle table booking removal for statuses that free up tables
+  const statusesThatFreeTable = ['cancelled', 'completed', 'no-show'];
+  const shouldFreeTable = statusesThatFreeTable.includes(status) &&
+                          !statusesThatFreeTable.includes(reservation.status) &&
+                          reservation.tableNumber &&
+                          reservation.tableNumber.length > 0;
+
+  if (shouldFreeTable) {
+    try {
+      for (const tableNum of reservation.tableNumber) {
+        const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
+        if (table) {
+          await removeTableBooking(table, reservation.date, reservation.slot);
+          console.log(`Removed booking from table ${tableNum} - reservation ${status}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error removing table bookings:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating table bookings',
+      });
+    }
+  }
+
+  reservation.status = status;
+  reservation.updatedAt = new Date();
+  await reservation.save();
+
+  const updatedReservation = await Reservation.findById(reservation._id)
+    .populate('userId', 'name email phone');
+
+  res.status(200).json({
+    success: true,
+    message: `Reservation status updated to ${status}`,
+    data: updatedReservation,
+  });
+});
+
 // @desc    Cancel user's own reservation
 // @route   DELETE /api/reservations/:id
 // @access  Private
@@ -498,6 +568,7 @@ module.exports = {
   getUserReservations,
   getAdminReservations,
   updateAdminReservation,
+  updateReservationStatus,
   updateUserReservation,
   cancelUserReservation,
   getReservationStats,
