@@ -40,8 +40,12 @@ const menuSchema = Joi.object({
 
 // Reservation validation
 const validateReservation = (data) => {
+  // Get start of today (midnight) in UTC to allow same-day reservations
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+
   const schema = Joi.object({
-    date: Joi.date().min('now').required(),
+    date: Joi.date().min(startOfToday).required(),
     slot: Joi.number().required(),
     guests: Joi.number().integer().min(1).max(20).required(),
     tableNumber: Joi.array().items(Joi.number().integer()).required(),

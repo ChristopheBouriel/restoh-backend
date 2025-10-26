@@ -68,11 +68,53 @@ const getTimeFromSlot = (slotNumber) => {
   };
 };
 
+/**
+ * Get full datetime from reservation date and slot
+ * @param {Date|string} date - Reservation date
+ * @param {number} slotNumber - Slot number
+ * @returns {Date|null} Full datetime or null if invalid
+ */
+const getReservationDateTime = (date, slotNumber) => {
+  const time = getTimeFromSlot(slotNumber);
+  if (!time) return null;
+
+  const reservationDate = new Date(date);
+  reservationDate.setHours(time.hours, time.minutes, 0, 0);
+  return reservationDate;
+};
+
+/**
+ * Check if current time is before reservation time
+ * @param {Date|string} date - Reservation date
+ * @param {number} slotNumber - Slot number
+ * @returns {boolean} True if current time is before reservation
+ */
+const isBeforeReservationTime = (date, slotNumber) => {
+  const reservationDateTime = getReservationDateTime(date, slotNumber);
+  if (!reservationDateTime) return false;
+  return new Date() < reservationDateTime;
+};
+
+/**
+ * Check if current time is after reservation time
+ * @param {Date|string} date - Reservation date
+ * @param {number} slotNumber - Slot number
+ * @returns {boolean} True if current time is after reservation
+ */
+const isAfterReservationTime = (date, slotNumber) => {
+  const reservationDateTime = getReservationDateTime(date, slotNumber);
+  if (!reservationDateTime) return false;
+  return new Date() >= reservationDateTime;
+};
+
 module.exports = {
   TIME_SLOTS,
   getLabelFromSlot,
   getSlotByNumber,
   isValidSlot,
   getAllTimeSlots,
-  getTimeFromSlot
+  getTimeFromSlot,
+  getReservationDateTime,
+  isBeforeReservationTime,
+  isAfterReservationTime
 };

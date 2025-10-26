@@ -2,7 +2,7 @@ const Reservation = require('../models/Reservation');
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
 const { validateReservation } = require('../utils/validation');
-const { isValidSlot } = require('../utils/timeSlots');
+const { isValidSlot, isBeforeReservationTime, isAfterReservationTime } = require('../utils/timeSlots');
 const {
   validateReservationUpdate,
   canCancelReservation,
@@ -437,6 +437,25 @@ const updateReservationStatus = asyncHandler(async (req, res) => {
     return res.status(404).json({
       success: false,
       message: 'Reservation not found',
+    });
+  }
+
+  // Validate status change based on reservation time
+  const beforeReservation = isBeforeReservationTime(reservation.date, reservation.slot);
+  const afterReservation = isAfterReservationTime(reservation.date, reservation.slot);
+
+  // Status-specific time validations
+  if (status === 'seated' && beforeReservation) {
+    return res.status(400).json({
+      success: false,
+      message: 'Cannot mark reservation as seated before the reservation time',
+    });
+  }
+
+  if ((status === 'completed' || status === 'no-show') && beforeReservation) {
+    return res.status(400).json({
+      success: false,
+      message: `Cannot mark reservation as ${status} before the reservation time`,
     });
   }
 
