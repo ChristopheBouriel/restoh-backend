@@ -305,10 +305,11 @@ const deleteOrder = asyncHandler(async (req, res) => {
     });
   }
 
-  if (order.userId.toString() !== req.user._id.toString()) {
-    return res.status(403).json({
+  // Only allow deletion of delivered or cancelled orders
+  if (order.status !== 'delivered' && order.status !== 'cancelled') {
+    return res.status(400).json({
       success: false,
-      message: 'Not authorized to delete this order',
+      message: 'Only delivered or cancelled orders can be deleted',
     });
   }
 
