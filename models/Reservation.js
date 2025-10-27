@@ -23,7 +23,12 @@ const ReservationSchema = new mongoose.Schema({
     required: [true, 'Please add a reservation date'],
     validate: {
       validator: function(value) {
-        return value >= new Date().setHours(0, 0, 0, 0);
+        // Only validate date is not in past when creating new reservation
+        // Allow admins to modify past reservations
+        if (this.isNew) {
+          return value >= new Date().setHours(0, 0, 0, 0);
+        }
+        return true;
       },
       message: 'Reservation date cannot be in the past',
     },
