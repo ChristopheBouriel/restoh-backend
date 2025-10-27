@@ -121,15 +121,12 @@ const updateProfileUser = asyncHandler(async (req, res) => {
     fieldsToUpdate.preferences = req.body.preferences;
   }
 
-  // Handle address separately
-  const addressFields = ['street', 'city', 'zipCode', 'state'];
-  const hasAddressFields = addressFields.some(field => req.body[field] !== undefined);
-
-  if (hasAddressFields) {
-    fieldsToUpdate.address = {};
+  // Handle address object - use dot notation to update individual fields
+  if (req.body.address && typeof req.body.address === 'object') {
+    const addressFields = ['street', 'city', 'zipCode', 'state'];
     addressFields.forEach(field => {
-      if (req.body[field] !== undefined) {
-        fieldsToUpdate.address[field] = req.body[field];
+      if (req.body.address[field] !== undefined) {
+        fieldsToUpdate[`address.${field}`] = req.body.address[field];
       }
     });
   }
@@ -156,6 +153,7 @@ const updateProfileUser = asyncHandler(async (req, res) => {
   }
 
   console.log('User updated successfully:', user._id);
+  console.log('User address after update:', user.address);
 
   res.status(200).json({
     success: true,
@@ -226,6 +224,85 @@ const logout = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Delete user account (soft delete)
+// @route   DELETE /api/auth/delete-account
+// @access  Private
+const deleteAccount = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+  }
+
+  // Check if account is already deleted
+  if (!user.isActive) {
+    return res.status(400).json({
+      success: false,
+      message: 'Account is already deleted',
+    });
+  }
+
+  // Import models for orders and reservations
+  const Order = require('../models/Order');
+  const Reservation = require('../models/Reservation');
+
+  // Generate unique deleted email using user ID to avoid duplicate key errors
+  const deletedEmail = `deleted-${req.user._id}@account.com`;
+
+  // Anonymize user data in all orders
+  await Order.updateMany(
+    { userId: req.user._id },
+    {
+      $set: {
+        userName: null,
+        userEmail: deletedEmail,
+      }
+    }
+  );
+
+  // Anonymize user data in all reservations
+  await Reservation.updateMany(
+    { userId: req.user._id },
+    {
+      $set: {
+        userName: null,
+        userEmail: deletedEmail,
+      }
+    }
+  );
+
+  // Soft delete: anonymize user data instead of deleting
+  // Using findByIdAndUpdate to avoid triggering password hash pre-save hook
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      name: null,
+      email: deletedEmail,
+      password: null,
+      phone: null,
+      address: {
+        street: null,
+        city: null,
+        state: null,
+        zipCode: null,
+      },
+      isActive: false,
+    },
+    { validateBeforeSave: false, runValidators: false }
+  );
+
+  // Clear the token cookie
+  clearTokenCookie(res);
+
+  res.status(200).json({
+    success: true,
+    message: 'Account deleted successfully',
+  });
+});
+
 module.exports = {
   register,
   login,
@@ -233,4 +310,5 @@ module.exports = {
   updateProfileUser,
   changePassword,
   logout,
+  deleteAccount,
 };
