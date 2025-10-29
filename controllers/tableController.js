@@ -71,7 +71,8 @@ const getAvailableTables = asyncHandler(async (req, res) => {
     success: true,
     data: {
       availableTables: tables.availableTables,
-      occupiedTables: tables.occupiedTables
+      occupiedTables: tables.occupiedTables,
+      notEligibleTables: tables.notEligibleTables
     }
   });
 });

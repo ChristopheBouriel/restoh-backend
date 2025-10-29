@@ -265,17 +265,37 @@ const removeTableBooking = async (table, date, slot) => {
 const findAvailableTables = async (date, slot, requiredCapacity = 1) => {
   const tables = await Table.find({
     isActive: true,
-    // TODO add business logic, for now we do noy care about capacity
     capacity: { $gte: 1 }
   });
 
-  const availableTables = tables.filter(table => isTableSlotAvailable(table, date, slot)).map(table => table.tableNumber);
-  const allTables = Array(12).fill().map((_, index) => index + 1);
-  const occupiedTables = allTables.filter(x => !availableTables.includes(x));
+  const guests = parseInt(requiredCapacity, 10);
+  const maxTableCapacity = guests + 1; // Accept max 1 extra seat per table
+
+  const available = [];
+  const occupied = [];
+  const notEligible = [];
+
+  tables.forEach(table => {
+    const isAvailable = isTableSlotAvailable(table, date, slot);
+    const isEligible = table.capacity <= maxTableCapacity;
+
+    if (!isAvailable) {
+      // Table is booked for this slot
+      occupied.push(table.tableNumber);
+    } else if (!isEligible) {
+      // Table is available but too large for the number of guests
+      notEligible.push(table.tableNumber);
+    } else {
+      // Table is available and suitable
+      available.push(table.tableNumber);
+    }
+  });
+
   return {
-    availableTables,
-    occupiedTables
-  }
+    availableTables: available,
+    occupiedTables: occupied,
+    notEligibleTables: notEligible
+  };
 };
 
 /**
@@ -303,6 +323,80 @@ const getTableAvailability = async (date) => {
   });
 };
 
+/**
+ * Validate that selected tables meet capacity requirements
+ * Rules:
+ * 1. Each table capacity must be <= guests + 1 (max 1 extra seat per table)
+ * 2. Total capacity must be >= guests (enough seats)
+ * 3. Total capacity must be <= guests + 1 (max 1 extra seat total)
+ *
+ * @param {Array<number>} tableNumbers - Array of table numbers
+ * @param {number} guests - Number of guests
+ * @returns {Promise<Object>} { valid: boolean, message: string, totalCapacity: number }
+ */
+const validateTableCapacity = async (tableNumbers, guests) => {
+  if (!tableNumbers || tableNumbers.length === 0) {
+    return {
+      valid: false,
+      message: 'At least one table must be selected',
+      totalCapacity: 0
+    };
+  }
+
+  // Fetch all selected tables
+  const tables = await Table.find({
+    tableNumber: { $in: tableNumbers },
+    isActive: true
+  });
+
+  if (tables.length !== tableNumbers.length) {
+    return {
+      valid: false,
+      message: 'One or more selected tables not found or inactive',
+      totalCapacity: 0
+    };
+  }
+
+  const maxTableCapacity = guests + 1;
+  let totalCapacity = 0;
+
+  // Check each table individually
+  for (const table of tables) {
+    totalCapacity += table.capacity;
+
+    if (table.capacity > maxTableCapacity) {
+      return {
+        valid: false,
+        message: `Table ${table.tableNumber} (capacity ${table.capacity}) is too large for ${guests} guests`,
+        totalCapacity
+      };
+    }
+  }
+
+  // Check total capacity
+  if (totalCapacity < guests) {
+    return {
+      valid: false,
+      message: `Total capacity (${totalCapacity}) is insufficient for ${guests} guests`,
+      totalCapacity
+    };
+  }
+
+  if (totalCapacity > maxTableCapacity) {
+    return {
+      valid: false,
+      message: `Total capacity (${totalCapacity}) exceeds maximum allowed (${maxTableCapacity}) for ${guests} guests`,
+      totalCapacity
+    };
+  }
+
+  return {
+    valid: true,
+    message: 'Table selection is valid',
+    totalCapacity
+  };
+};
+
 module.exports = {
   createReservationDateTime,
   getHoursDifference,
@@ -315,5 +409,6 @@ module.exports = {
   addTableBooking,
   removeTableBooking,
   findAvailableTables,
-  getTableAvailability
+  getTableAvailability,
+  validateTableCapacity
 };

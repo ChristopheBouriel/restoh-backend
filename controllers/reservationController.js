@@ -7,7 +7,8 @@ const {
   validateReservationUpdate,
   canCancelReservation,
   addTableBooking,
-  removeTableBooking
+  removeTableBooking,
+  validateTableCapacity
 } = require('../utils/reservationHelpers');
 const Table = require('../models/Table');
 
@@ -25,6 +26,17 @@ const createReservation = asyncHandler(async (req, res) => {
   }
 
   const { date, slot, guests, tableNumber, specialRequest, contactPhone } = req.body;
+
+  // Validate table capacity matches number of guests
+  if (tableNumber && tableNumber.length > 0) {
+    const capacityValidation = await validateTableCapacity(tableNumber, guests);
+    if (!capacityValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: capacityValidation.message,
+      });
+    }
+  }
 
   // Create reservation object
   const reservationData = {
@@ -214,6 +226,15 @@ const updateAdminReservation = asyncHandler(async (req, res) => {
 
   // Handle table number changes
   if (tableNumber && JSON.stringify(tableNumber) !== JSON.stringify(originalReservation.tableNumber)) {
+    // Validate new table capacity
+    const capacityValidation = await validateTableCapacity(tableNumber, originalReservation.guests);
+    if (!capacityValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: capacityValidation.message,
+      });
+    }
+
     try {
       // Remove booking from old tables if they exist
       if (originalReservation.tableNumber && originalReservation.tableNumber.length > 0) {
@@ -362,6 +383,17 @@ const updateUserReservation = asyncHandler(async (req, res) => {
   }
 
   const { guests, specialRequest, contactPhone } = req.body;
+
+  // Validate table capacity if guests number changes
+  if (guests && guests !== reservation.guests && reservation.tableNumber && reservation.tableNumber.length > 0) {
+    const capacityValidation = await validateTableCapacity(reservation.tableNumber, guests);
+    if (!capacityValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: capacityValidation.message,
+      });
+    }
+  }
 
   // Handle date/slot changes for table bookings
   if ((date || slot) && reservation.tableNumber && reservation.tableNumber.length > 0) {
