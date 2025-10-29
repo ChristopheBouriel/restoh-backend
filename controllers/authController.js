@@ -73,6 +73,22 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
+  // Check if account is deleted
+  if (user.email && user.email.startsWith('deleted-')) {
+    return res.status(403).json({
+      success: false,
+      message: 'This account has been deleted. Please contact support if you believe this is an error.',
+    });
+  }
+
+  // Check if account is deactivated by admin
+  if (!user.isActive) {
+    return res.status(403).json({
+      success: false,
+      message: 'Your account has been deactivated by an administrator. Please contact our support team at support@restoh.com for assistance.',
+    });
+  }
+
   // Update last login
   await user.updateLastLogin();
 

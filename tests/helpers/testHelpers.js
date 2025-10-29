@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const MenuItem = require('../../models/MenuItem');
+const Order = require('../../models/Order');
 
 const createTestUser = async (userData = {}) => {
   const defaultUser = {
@@ -10,7 +11,18 @@ const createTestUser = async (userData = {}) => {
     role: 'user',
   };
 
-  const user = await User.create({ ...defaultUser, ...userData });
+  // For deleted users, bypass validation
+  const mergedData = { ...defaultUser, ...userData };
+  const isDeleted = mergedData.email && mergedData.email.startsWith('deleted-');
+
+  if (isDeleted) {
+    // Use insertOne to bypass Mongoose validation completely
+    const result = await User.collection.insertOne(mergedData);
+    const user = await User.findById(result.insertedId);
+    return user;
+  }
+
+  const user = await User.create(mergedData);
   return user;
 };
 
@@ -39,6 +51,30 @@ const createTestMenuItem = async (itemData = {}) => {
 
   const menuItem = await MenuItem.create({ ...defaultItem, ...itemData });
   return menuItem;
+};
+
+const createTestOrder = async (orderData = {}) => {
+  const defaultOrder = {
+    userId: orderData.userId,
+    userEmail: 'test@example.com',
+    userName: 'Test User',
+    items: [{
+      menuItem: orderData.menuItemId || null,
+      name: 'Test Item',
+      quantity: 1,
+      price: 10.99,
+      image: 'test-image.jpg',
+    }],
+    totalPrice: 10.99,
+    orderType: 'delivery',
+    status: 'pending',
+    paymentStatus: 'pending',
+    paymentMethod: 'cash',
+    deliveryAddress: '123 Test St',
+  };
+
+  const order = await Order.create({ ...defaultOrder, ...orderData });
+  return order;
 };
 
 const generateAuthToken = (userId) => {
@@ -95,6 +131,7 @@ module.exports = {
   createTestUser,
   createTestAdmin,
   createTestMenuItem,
+  createTestOrder,
   generateAuthToken,
   mockRequest,
   mockResponse,

@@ -84,6 +84,25 @@ const getUser = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const updateUser = asyncHandler(async (req, res) => {
   console.log(req.body)
+
+  // Check if user exists first
+  const existingUser = await User.findById(req.params.id);
+
+  if (!existingUser) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+  }
+
+  // Prevent modification of deleted accounts
+  if (existingUser.email && existingUser.email.startsWith('deleted-')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Cannot modify a deleted account',
+    });
+  }
+
   const fieldsToUpdate = {
     role: req.body.role,
     isActive: req.body.isActive,
@@ -100,13 +119,6 @@ const updateUser = asyncHandler(async (req, res) => {
     new: true,
     runValidators: true,
   }).select('-password');
-
-  if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
-  }
 
   res.status(200).json({
     success: true,
@@ -133,6 +145,14 @@ const deleteUser = asyncHandler(async (req, res) => {
     return res.status(400).json({
       success: false,
       message: 'Cannot delete your own account',
+    });
+  }
+
+  // Prevent deletion of already deleted accounts
+  if (user.email && user.email.startsWith('deleted-')) {
+    return res.status(400).json({
+      success: false,
+      message: 'This account is already deleted',
     });
   }
 

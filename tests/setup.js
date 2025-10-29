@@ -4,6 +4,15 @@ const mongoose = require('mongoose');
 let mongoServer;
 
 beforeAll(async () => {
+  // Disconnect any existing connections
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+
+  // Clear mongoose model cache to avoid conflicts
+  mongoose.connection.models = {};
+  mongoose.models = {};
+
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
 
