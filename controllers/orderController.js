@@ -198,6 +198,17 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     });
   }
 
+  // Get the original order to check previous status
+  const originalOrder = await Order.findById(req.params.id);
+
+  if (!originalOrder) {
+    return res.status(404).json({
+      success: false,
+      message: 'Order not found',
+    });
+  }
+
+  // Update the order status
   const order = await Order.findByIdAndUpdate(
     req.params.id,
     {
@@ -207,14 +218,26 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     { new: true, runValidators: true }
   ).populate('items.menuItem', 'name price');
 
-  if (!order) {
-    return res.status(404).json({
-      success: false,
-      message: 'Order not found',
-    });
-  }
-
   console.log(`✅ Order status updated successfully in MongoDB: ${order._id}`);
+
+  // Update menu items orderCount if order is delivered for the first time
+  if (status === 'delivered' && originalOrder.status !== 'delivered') {
+    try {
+      for (const item of order.items) {
+        if (item.menuItem) {
+          await MenuItem.findByIdAndUpdate(
+            item.menuItem._id,
+            {
+              $inc: { orderCount: item.quantity }
+            }
+          );
+        }
+      }
+      console.log('Menu items orderCount updated for delivered order');
+    } catch (error) {
+      console.error('Error updating menu items orderCount:', error);
+    }
+  }
 
   // Update user statistics if order is delivered and payment wasn't already paid
   if (status === 'delivered' && order.paymentStatus !== 'paid') {
