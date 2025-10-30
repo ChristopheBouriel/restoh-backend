@@ -382,11 +382,15 @@ const updateUserReservation = asyncHandler(async (req, res) => {
     });
   }
 
-  const { guests, specialRequest, contactPhone } = req.body;
+  const { guests, specialRequest, contactPhone, tableNumber } = req.body;
 
-  // Validate table capacity if guests number changes
-  if (guests && guests !== reservation.guests && reservation.tableNumber && reservation.tableNumber.length > 0) {
-    const capacityValidation = await validateTableCapacity(reservation.tableNumber, guests);
+  // Determine which tables to validate (new tables if provided, otherwise existing ones)
+  const tablesToValidate = tableNumber || reservation.tableNumber;
+  const guestsToValidate = guests || reservation.guests;
+
+  // Validate table capacity if guests or tables change
+  if (tablesToValidate && tablesToValidate.length > 0) {
+    const capacityValidation = await validateTableCapacity(tablesToValidate, guestsToValidate);
     if (!capacityValidation.valid) {
       return res.status(400).json({
         success: false,
@@ -395,19 +399,42 @@ const updateUserReservation = asyncHandler(async (req, res) => {
     }
   }
 
-  // Handle date/slot changes for table bookings
-  if ((date || slot) && reservation.tableNumber && reservation.tableNumber.length > 0) {
+  // Determine final date/slot for booking updates
+  const finalDate = date || reservation.date;
+  const finalSlot = slot || reservation.slot;
+  const finalTableNumber = tableNumber || reservation.tableNumber;
+
+  // Check if we need to update table bookings
+  const dateChanged = date && date !== reservation.date;
+  const slotChanged = slot && slot !== reservation.slot;
+  const tablesChanged = tableNumber && JSON.stringify(tableNumber.sort()) !== JSON.stringify(reservation.tableNumber.sort());
+
+  if (dateChanged || slotChanged || tablesChanged) {
     try {
-      for (const tableNum of reservation.tableNumber) {
-        const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
-        if (table) {
-          // Remove old booking
-          await removeTableBooking(table, reservation.date, reservation.slot);
-          // Add new booking with updated date/slot
-          const newDate = date || reservation.date;
-          const newSlot = slot || reservation.slot;
-          await addTableBooking(table, newDate, newSlot);
-          console.log(`Updated table ${tableNum} booking from ${reservation.date}/${reservation.slot} to ${newDate}/${newSlot}`);
+      // Remove old bookings
+      if (reservation.tableNumber && reservation.tableNumber.length > 0) {
+        for (const tableNum of reservation.tableNumber) {
+          const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
+          if (table) {
+            await removeTableBooking(table, reservation.date, reservation.slot);
+            console.log(`Removed old booking for table ${tableNum}`);
+          }
+        }
+      }
+
+      // Add new bookings with final date/slot/tables
+      if (finalTableNumber && finalTableNumber.length > 0) {
+        for (const tableNum of finalTableNumber) {
+          const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
+          if (table) {
+            await addTableBooking(table, finalDate, finalSlot);
+            console.log(`Added new booking for table ${tableNum} on ${finalDate}/${finalSlot}`);
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: `Table ${tableNum} not found`,
+            });
+          }
         }
       }
     } catch (error) {
@@ -424,6 +451,7 @@ const updateUserReservation = asyncHandler(async (req, res) => {
   if (date) updateData.date = date;
   if (slot) updateData.slot = slot;
   if (guests) updateData.guests = guests;
+  if (tableNumber) updateData.tableNumber = tableNumber;
   if (specialRequest !== undefined) updateData.specialRequest = specialRequest;
   if (contactPhone) updateData.contactPhone = contactPhone;
   updateData.updatedAt = new Date();

@@ -43,10 +43,10 @@ const getTableAvailabilityForDate = asyncHandler(async (req, res) => {
 });
 
 // @desc    Find available tables for specific date, slot and capacity
-// @route   GET /api/tables/available?date=YYYY-MM-DD&slot=1&capacity=4
+// @route   GET /api/tables/available?date=YYYY-MM-DD&slot=1&capacity=4&excludeReservationId=xxx
 // @access  Private
 const getAvailableTables = asyncHandler(async (req, res) => {
-  const { date, slot, capacity = 1 } = req.query;
+  const { date, slot, capacity = 1, excludeReservationId } = req.query;
 
   if (!date || !slot) {
     return res.status(400).json({
@@ -65,7 +65,7 @@ const getAvailableTables = asyncHandler(async (req, res) => {
     });
   }
 
-  const tables = await findAvailableTables(date, slotNumber, requiredCapacity);
+  const tables = await findAvailableTables(date, slotNumber, requiredCapacity, excludeReservationId);
 
   res.status(200).json({
     success: true,

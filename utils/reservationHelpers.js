@@ -1,5 +1,6 @@
 const { getTimeFromSlot } = require('./timeSlots');
 const Table = require('../models/Table');
+const Reservation = require('../models/Reservation');
 
 /**
  * Create a Date object from reservation date and slot number
@@ -260,9 +261,11 @@ const removeTableBooking = async (table, date, slot) => {
  * @param {Date|string} date - Target date
  * @param {number} slot - Slot number
  * @param {number} requiredCapacity - Minimum table capacity required
- * @returns {Promise<Array>} Array of available table documents
+ * @param {string} excludeReservationId - Optional reservation ID to exclude (for edit mode)
+ * @returns {Promise<Object>} Object with availableTables, occupiedTables, and notEligibleTables arrays
  */
-const findAvailableTables = async (date, slot, requiredCapacity = 1) => {
+const findAvailableTables = async (date, slot, requiredCapacity = 1, excludeReservationId = null) => {
+  // Get all active tables
   const tables = await Table.find({
     isActive: true,
     capacity: { $gte: 1 }
@@ -271,15 +274,40 @@ const findAvailableTables = async (date, slot, requiredCapacity = 1) => {
   const guests = parseInt(requiredCapacity, 10);
   const maxTableCapacity = guests + 1; // Accept max 1 extra seat per table
 
+  // Find all confirmed/seated reservations for this date and slot
+  const targetDate = new Date(date);
+  targetDate.setHours(0, 0, 0, 0);
+
+  const query = {
+    date: targetDate,
+    slot: slot,
+    status: { $in: ['confirmed', 'seated'] }
+  };
+
+  // Exclude specific reservation if provided (for edit mode)
+  if (excludeReservationId) {
+    query._id = { $ne: excludeReservationId };
+  }
+
+  const existingReservations = await Reservation.find(query);
+
+  // Extract all occupied table numbers from reservations
+  const occupiedTableNumbers = new Set();
+  existingReservations.forEach(reservation => {
+    if (reservation.tableNumber && Array.isArray(reservation.tableNumber)) {
+      reservation.tableNumber.forEach(tableNum => occupiedTableNumbers.add(tableNum));
+    }
+  });
+
   const available = [];
   const occupied = [];
   const notEligible = [];
 
   tables.forEach(table => {
-    const isAvailable = isTableSlotAvailable(table, date, slot);
+    const isOccupied = occupiedTableNumbers.has(table.tableNumber);
     const isEligible = table.capacity <= maxTableCapacity;
 
-    if (!isAvailable) {
+    if (isOccupied) {
       // Table is booked for this slot
       occupied.push(table.tableNumber);
     } else if (!isEligible) {
