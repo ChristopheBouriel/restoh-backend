@@ -1,0 +1,66 @@
+/**
+ * Standardized Error Codes for RestOh Backend
+ *
+ * Used in error responses to enable frontend InlineAlert component
+ * to provide better UX with specific handling for different error types.
+ */
+
+// === Reservations - Availability ===
+const TABLES_UNAVAILABLE = 'TABLES_UNAVAILABLE';
+const TABLE_NOT_FOUND = 'TABLE_NOT_FOUND';
+
+// === Reservations - Capacity & Validation ===
+const CAPACITY_EXCEEDED = 'CAPACITY_EXCEEDED';
+const CAPACITY_INSUFFICIENT = 'CAPACITY_INSUFFICIENT';
+const INVALID_TABLE_CAPACITY = 'INVALID_TABLE_CAPACITY';
+
+// === Reservations - Timing ===
+const RESERVATION_TOO_LATE = 'RESERVATION_TOO_LATE';
+const MODIFICATION_TOO_LATE = 'MODIFICATION_TOO_LATE';
+const CANCELLATION_TOO_LATE = 'CANCELLATION_TOO_LATE';
+
+// === Reservations - Status ===
+const RESERVATION_NOT_FOUND = 'RESERVATION_NOT_FOUND';
+const RESERVATION_NOT_MODIFIABLE = 'RESERVATION_NOT_MODIFIABLE';
+const RESERVATION_ALREADY_CANCELLED = 'RESERVATION_ALREADY_CANCELLED';
+
+// === Authentication ===
+const AUTH_INVALID_CREDENTIALS = 'AUTH_INVALID_CREDENTIALS';
+const AUTH_ACCOUNT_DELETED = 'AUTH_ACCOUNT_DELETED';
+const AUTH_ACCOUNT_INACTIVE = 'AUTH_ACCOUNT_INACTIVE';
+
+// === Generic ===
+const VALIDATION_ERROR = 'VALIDATION_ERROR';
+const SERVER_ERROR = 'SERVER_ERROR';
+const FORBIDDEN = 'FORBIDDEN';
+
+module.exports = {
+  // Reservations - Availability
+  TABLES_UNAVAILABLE,
+  TABLE_NOT_FOUND,
+
+  // Reservations - Capacity & Validation
+  CAPACITY_EXCEEDED,
+  CAPACITY_INSUFFICIENT,
+  INVALID_TABLE_CAPACITY,
+
+  // Reservations - Timing
+  RESERVATION_TOO_LATE,
+  MODIFICATION_TOO_LATE,
+  CANCELLATION_TOO_LATE,
+
+  // Reservations - Status
+  RESERVATION_NOT_FOUND,
+  RESERVATION_NOT_MODIFIABLE,
+  RESERVATION_ALREADY_CANCELLED,
+
+  // Authentication
+  AUTH_INVALID_CREDENTIALS,
+  AUTH_ACCOUNT_DELETED,
+  AUTH_ACCOUNT_INACTIVE,
+
+  // Generic
+  VALIDATION_ERROR,
+  SERVER_ERROR,
+  FORBIDDEN
+};

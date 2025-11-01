@@ -1,0 +1,229 @@
+const ERROR_CODES = require('../constants/errorCodes');
+
+/**
+ * Error Helpers - Utility functions to build standardized error responses
+ *
+ * These helpers create consistent error structures that the frontend
+ * InlineAlert component can parse and display intelligently.
+ *
+ * Standard format:
+ * {
+ *   success: false,
+ *   error: "User-facing message",
+ *   code: "ERROR_CODE",
+ *   details: {
+ *     message: "Additional explanation",
+ *     // ... other contextual data
+ *   }
+ * }
+ */
+
+/**
+ * Create a tables unavailable error
+ * @param {Array<number>} unavailableTables - Table numbers that are not available
+ * @param {Array<number>} suggestedTables - Alternative table suggestions
+ * @returns {Object} Structured error response
+ */
+const createTablesUnavailableError = (unavailableTables, suggestedTables = []) => {
+  const tablesList = unavailableTables.length === 1
+    ? `Table ${unavailableTables[0]} is`
+    : `Tables ${unavailableTables.join(' and ')} are`;
+
+  return {
+    success: false,
+    error: `${tablesList} no longer available`,
+    code: ERROR_CODES.TABLES_UNAVAILABLE,
+    details: {
+      unavailableTables,
+      message: 'These tables were just booked by another customer.',
+      suggestedTables
+    }
+  };
+};
+
+/**
+ * Create a capacity exceeded error
+ * @param {number} guests - Number of guests
+ * @param {Array<number>} selectedTables - Selected table numbers
+ * @param {number} totalCapacity - Total capacity of selected tables
+ * @param {number} maxAllowed - Maximum allowed capacity
+ * @param {Array<number>} suggestedTables - Alternative table suggestions
+ * @returns {Object} Structured error response
+ */
+const createCapacityExceededError = (guests, selectedTables, totalCapacity, maxAllowed, suggestedTables = []) => {
+  return {
+    success: false,
+    error: `Total capacity (${totalCapacity}) exceeds maximum allowed (${maxAllowed}) for ${guests} guests`,
+    code: ERROR_CODES.CAPACITY_EXCEEDED,
+    details: {
+      guests,
+      selectedTables,
+      totalCapacity,
+      maxAllowed,
+      message: `You selected tables with ${totalCapacity} total seats for ${guests} guests. Maximum allowed is ${maxAllowed} seats (party size + 1).`,
+      rule: 'Total capacity must not exceed party size + 1',
+      suggestedTables
+    }
+  };
+};
+
+/**
+ * Create a table capacity error (single table too large)
+ * @param {number} tableNumber - Table number
+ * @param {number} tableCapacity - Table capacity
+ * @param {number} guests - Number of guests
+ * @param {Array<number>} suggestedTables - Alternative table suggestions
+ * @returns {Object} Structured error response
+ */
+const createInvalidTableCapacityError = (tableNumber, tableCapacity, guests, suggestedTables = []) => {
+  const maxAllowed = guests + 1;
+
+  return {
+    success: false,
+    error: `Table ${tableNumber} (capacity ${tableCapacity}) is too large for ${guests} guests`,
+    code: ERROR_CODES.INVALID_TABLE_CAPACITY,
+    details: {
+      tableNumber,
+      tableCapacity,
+      guests,
+      maxAllowed,
+      message: `This table has ${tableCapacity} seats, which exceeds the maximum of ${maxAllowed} allowed for ${guests} guests.`,
+      rule: 'Individual table capacity cannot exceed party size + 1',
+      suggestedTables
+    }
+  };
+};
+
+/**
+ * Create a capacity insufficient error
+ * @param {number} guests - Number of guests
+ * @param {Array<number>} selectedTables - Selected table numbers
+ * @param {number} totalCapacity - Total capacity of selected tables
+ * @param {Array<number>} suggestedTables - Alternative table suggestions
+ * @returns {Object} Structured error response
+ */
+const createCapacityInsufficientError = (guests, selectedTables, totalCapacity, suggestedTables = []) => {
+  return {
+    success: false,
+    error: `Total capacity (${totalCapacity}) is insufficient for ${guests} guests`,
+    code: ERROR_CODES.CAPACITY_INSUFFICIENT,
+    details: {
+      guests,
+      selectedTables,
+      totalCapacity,
+      needed: guests,
+      message: `The selected tables have only ${totalCapacity} seats, but you need ${guests} seats for your party.`,
+      suggestedTables
+    }
+  };
+};
+
+/**
+ * Create a cancellation too late error
+ * @param {number} hoursUntil - Hours until reservation
+ * @param {string} contactPhone - Restaurant contact phone
+ * @returns {Object} Structured error response
+ */
+const createCancellationTooLateError = (hoursUntil, contactPhone = '+33 1 23 45 67 89') => {
+  const minutesRemaining = Math.round(hoursUntil * 60);
+  const timeDescription = hoursUntil < 1
+    ? `${minutesRemaining} minutes`
+    : `${hoursUntil.toFixed(1)} hours`;
+
+  return {
+    success: false,
+    error: 'Cannot cancel reservation less than 2 hours before scheduled time',
+    code: ERROR_CODES.CANCELLATION_TOO_LATE,
+    details: {
+      hoursRemaining: hoursUntil,
+      message: `Your reservation is in ${timeDescription}. Free cancellation is only available up to 2 hours before.`,
+      policy: 'Free cancellation available up to 2 hours before your reservation',
+      contactPhone,
+      action: `Please contact us directly to discuss your reservation at ${contactPhone}`
+    }
+  };
+};
+
+/**
+ * Create a modification too late error
+ * @param {number} hoursUntil - Hours until reservation
+ * @returns {Object} Structured error response
+ */
+const createModificationTooLateError = (hoursUntil) => {
+  return {
+    success: false,
+    error: 'Cannot modify reservation less than 1 hour before the original time',
+    code: ERROR_CODES.MODIFICATION_TOO_LATE,
+    details: {
+      hoursRemaining: hoursUntil,
+      message: `Your reservation is in ${hoursUntil.toFixed(1)} hours. Modifications must be made at least 1 hour in advance.`,
+      policy: 'Reservations can be modified up to 1 hour before the scheduled time'
+    }
+  };
+};
+
+/**
+ * Create a reservation too late error (new reservation)
+ * @param {number} hoursUntil - Hours until requested time
+ * @param {string} contactPhone - Restaurant contact phone
+ * @returns {Object} Structured error response
+ */
+const createReservationTooLateError = (hoursUntil, contactPhone = '+33 1 23 45 67 89') => {
+  return {
+    success: false,
+    error: 'New reservation time must be at least 1 hour from now',
+    code: ERROR_CODES.RESERVATION_TOO_LATE,
+    details: {
+      hoursUntil,
+      minimumAdvance: 1,
+      message: 'Reservations must be made at least 1 hour in advance.',
+      contactPhone,
+      action: `For last-minute reservations, please call us directly at ${contactPhone}`
+    }
+  };
+};
+
+/**
+ * Create a generic validation error
+ * @param {string} message - Error message
+ * @param {Object} validationDetails - Validation error details
+ * @returns {Object} Structured error response
+ */
+const createValidationError = (message, validationDetails = {}) => {
+  return {
+    success: false,
+    error: message,
+    code: ERROR_CODES.VALIDATION_ERROR,
+    details: validationDetails
+  };
+};
+
+/**
+ * Create a server error response
+ * @param {string} message - Error message
+ * @param {number} retryAfter - Seconds to wait before retry
+ * @returns {Object} Structured error response
+ */
+const createServerError = (message = 'Server temporarily unavailable', retryAfter = 30) => {
+  return {
+    success: false,
+    error: message,
+    code: ERROR_CODES.SERVER_ERROR,
+    details: {
+      retryAfter,
+      message: 'Our servers are experiencing high traffic. Please try again in a moment.'
+    }
+  };
+};
+
+module.exports = {
+  createTablesUnavailableError,
+  createCapacityExceededError,
+  createInvalidTableCapacityError,
+  createCapacityInsufficientError,
+  createCancellationTooLateError,
+  createModificationTooLateError,
+  createReservationTooLateError,
+  createValidationError,
+  createServerError
+};

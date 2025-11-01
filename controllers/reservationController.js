@@ -8,9 +8,18 @@ const {
   canCancelReservation,
   addTableBooking,
   removeTableBooking,
-  validateTableCapacity
+  validateTableCapacity,
+  findAvailableTables
 } = require('../utils/reservationHelpers');
 const Table = require('../models/Table');
+const {
+  createCapacityExceededError,
+  createInvalidTableCapacityError,
+  createCapacityInsufficientError,
+  createModificationTooLateError,
+  createCancellationTooLateError,
+  createValidationError
+} = require('../utils/errorHelpers');
 
 // @desc    Create new reservation
 // @route   POST /api/reservations
@@ -31,10 +40,39 @@ const createReservation = asyncHandler(async (req, res) => {
   if (tableNumber && tableNumber.length > 0) {
     const capacityValidation = await validateTableCapacity(tableNumber, guests);
     if (!capacityValidation.valid) {
-      return res.status(400).json({
-        success: false,
-        message: capacityValidation.message,
-      });
+      // Find alternative table suggestions
+      const availability = await findAvailableTables(date, slot, guests);
+      const suggestedTables = availability.availableTables.slice(0, 5); // Limit to 5 suggestions
+
+      // Determine which specific error to return
+      let errorResponse;
+
+      if (capacityValidation.totalCapacity > guests + 1) {
+        // Total capacity exceeds maximum allowed
+        errorResponse = createCapacityExceededError(
+          guests,
+          tableNumber,
+          capacityValidation.totalCapacity,
+          guests + 1,
+          suggestedTables
+        );
+      } else if (capacityValidation.totalCapacity < guests) {
+        // Total capacity is insufficient
+        errorResponse = createCapacityInsufficientError(
+          guests,
+          tableNumber,
+          capacityValidation.totalCapacity,
+          suggestedTables
+        );
+      } else {
+        // Individual table too large
+        errorResponse = createValidationError(
+          capacityValidation.message,
+          { suggestedTables }
+        );
+      }
+
+      return res.status(400).json(errorResponse);
     }
   }
 
@@ -376,10 +414,9 @@ const updateUserReservation = asyncHandler(async (req, res) => {
   // Use helper to validate time constraints
   const validation = validateReservationUpdate(reservation, { date, slot });
   if (!validation.isValid) {
-    return res.status(400).json({
-      success: false,
-      message: validation.errors[0], // Return first error
-    });
+    // Use the new error helper for modification timing errors
+    const errorResponse = createModificationTooLateError(validation.hoursUntil || 0);
+    return res.status(400).json(errorResponse);
   }
 
   const { guests, specialRequest, contactPhone, tableNumber } = req.body;
@@ -387,21 +424,47 @@ const updateUserReservation = asyncHandler(async (req, res) => {
   // Determine which tables to validate (new tables if provided, otherwise existing ones)
   const tablesToValidate = tableNumber || reservation.tableNumber;
   const guestsToValidate = guests || reservation.guests;
+  const finalDate = date || reservation.date;
+  const finalSlot = slot || reservation.slot;
 
   // Validate table capacity if guests or tables change
   if (tablesToValidate && tablesToValidate.length > 0) {
     const capacityValidation = await validateTableCapacity(tablesToValidate, guestsToValidate);
     if (!capacityValidation.valid) {
-      return res.status(400).json({
-        success: false,
-        message: capacityValidation.message,
-      });
+      // Find alternative table suggestions (excluding current reservation)
+      const availability = await findAvailableTables(finalDate, finalSlot, guestsToValidate, req.params.id);
+      const suggestedTables = availability.availableTables.slice(0, 5);
+
+      // Determine which specific error to return
+      let errorResponse;
+
+      if (capacityValidation.totalCapacity > guestsToValidate + 1) {
+        errorResponse = createCapacityExceededError(
+          guestsToValidate,
+          tablesToValidate,
+          capacityValidation.totalCapacity,
+          guestsToValidate + 1,
+          suggestedTables
+        );
+      } else if (capacityValidation.totalCapacity < guestsToValidate) {
+        errorResponse = createCapacityInsufficientError(
+          guestsToValidate,
+          tablesToValidate,
+          capacityValidation.totalCapacity,
+          suggestedTables
+        );
+      } else {
+        errorResponse = createValidationError(
+          capacityValidation.message,
+          { suggestedTables }
+        );
+      }
+
+      return res.status(400).json(errorResponse);
     }
   }
 
-  // Determine final date/slot for booking updates
-  const finalDate = date || reservation.date;
-  const finalSlot = slot || reservation.slot;
+  // Determine final table number for booking updates
   const finalTableNumber = tableNumber || reservation.tableNumber;
 
   // Check if we need to update table bookings
@@ -596,10 +659,8 @@ const cancelUserReservation = asyncHandler(async (req, res) => {
   // Use helper to validate cancellation time constraints
   const cancellationCheck = canCancelReservation(reservation.date, reservation.slot);
   if (!cancellationCheck.canCancel) {
-    return res.status(400).json({
-      success: false,
-      message: cancellationCheck.message,
-    });
+    const errorResponse = createCancellationTooLateError(cancellationCheck.hoursUntil);
+    return res.status(400).json(errorResponse);
   }
 
   reservation.status = 'cancelled';
