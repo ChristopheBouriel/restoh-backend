@@ -275,12 +275,23 @@ const findAvailableTables = async (date, slot, requiredCapacity = 1, excludeRese
   const maxTableCapacity = guests + 1; // Accept max 1 extra seat per table
 
   // Find all confirmed/seated reservations for this date and slot
-  const targetDate = new Date(date);
-  targetDate.setHours(0, 0, 0, 0);
+  // Use date range to match entire day (handles timezone/millisecond differences)
+  const startOfDay = new Date(date);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(date);
+  endOfDay.setHours(23, 59, 59, 999);
+
+  // IMPORTANT: A reservation occupies 3 consecutive slots (slot, slot+1, slot+2)
+  // For requested slot N, we need to find reservations with slot X where:
+  // - X <= N <= X+2 (the reservation overlaps with our requested slot)
+  // - Which means: N-2 <= X <= N
+  const slotNumber = parseInt(slot, 10);
+  const minOverlappingSlot = Math.max(1, slotNumber - 2); // Don't go below slot 1
 
   const query = {
-    date: targetDate,
-    slot: slot,
+    date: { $gte: startOfDay, $lte: endOfDay },
+    slot: { $gte: minOverlappingSlot, $lte: slotNumber },
     status: { $in: ['confirmed', 'seated'] }
   };
 
