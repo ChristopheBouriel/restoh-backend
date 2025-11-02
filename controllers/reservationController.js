@@ -347,7 +347,6 @@ const updateAdminReservation = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const getReservationStats = asyncHandler(async (req, res) => {
   const totalReservations = await Reservation.countDocuments();
-  const pendingReservations = await Reservation.countDocuments({ status: 'pending' });
   const noShowReservations = await Reservation.countDocuments({ status: 'no-show' });
   const confirmedReservations = await Reservation.countDocuments({ status: 'confirmed' });
   const seatedReservations = await Reservation.countDocuments({ status: 'seated' });
@@ -358,16 +357,16 @@ const getReservationStats = asyncHandler(async (req, res) => {
     success: true,
     data: {
       totalReservations,
-      pendingReservations,
       confirmedReservations,
       seatedReservations,
       completedReservations,
+      noShowReservations,
       cancelledReservations,
       reservationsByStatus: {
-        pending: pendingReservations,
         confirmed: confirmedReservations,
         seated: seatedReservations,
         completed: completedReservations,
+        noShow: noShowReservations,
         cancelled: cancelledReservations,
       },
     },
