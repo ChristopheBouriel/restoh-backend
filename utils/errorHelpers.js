@@ -18,6 +18,89 @@ const ERROR_CODES = require('../constants/errorCodes');
  * }
  */
 
+// ========================================
+// AUTHENTICATION ERRORS
+// ========================================
+
+/**
+ * Create an invalid credentials error
+ * @param {string} email - User email (optional, for logging)
+ * @returns {Object} Structured error response
+ */
+const createInvalidCredentialsError = (email = null) => {
+  return {
+    success: false,
+    error: 'Invalid email or password',
+    code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+    details: {
+      message: 'Please check your credentials and try again.',
+      field: 'email'
+    }
+  };
+};
+
+/**
+ * Create an email already exists error
+ * @param {string} email - The email that already exists
+ * @returns {Object} Structured error response
+ */
+const createEmailExistsError = (email) => {
+  return {
+    success: false,
+    error: 'This email is already registered',
+    code: ERROR_CODES.EMAIL_ALREADY_EXISTS,
+    details: {
+      field: 'email',
+      value: email,
+      message: 'An account with this email already exists.',
+      suggestion: 'Try logging in instead, or use password reset if you forgot your password.',
+      actions: {
+        login: '/login',
+        resetPassword: '/reset-password'
+      }
+    }
+  };
+};
+
+/**
+ * Create an account deleted error
+ * @returns {Object} Structured error response
+ */
+const createAccountDeletedError = () => {
+  return {
+    success: false,
+    error: 'This account has been deleted',
+    code: ERROR_CODES.AUTH_ACCOUNT_DELETED,
+    details: {
+      message: 'This account has been permanently deleted.',
+      suggestion: 'Please contact support if you believe this is an error.',
+      contactEmail: 'support@restoh.com'
+    }
+  };
+};
+
+/**
+ * Create an account inactive error
+ * @returns {Object} Structured error response
+ */
+const createAccountInactiveError = () => {
+  return {
+    success: false,
+    error: 'Your account has been deactivated',
+    code: ERROR_CODES.AUTH_ACCOUNT_INACTIVE,
+    details: {
+      message: 'Your account has been deactivated by an administrator.',
+      suggestion: 'Please contact our support team for assistance.',
+      contactEmail: 'support@restoh.com',
+      contactPhone: '+33 1 23 45 67 89'
+    }
+  };
+};
+
+// ========================================
+// RESERVATION ERRORS
+// ========================================
+
 /**
  * Create a tables unavailable error
  * @param {Array<number>} unavailableTables - Table numbers that are not available
@@ -217,6 +300,13 @@ const createServerError = (message = 'Server temporarily unavailable', retryAfte
 };
 
 module.exports = {
+  // Authentication
+  createInvalidCredentialsError,
+  createEmailExistsError,
+  createAccountDeletedError,
+  createAccountInactiveError,
+
+  // Reservations
   createTablesUnavailableError,
   createCapacityExceededError,
   createInvalidTableCapacityError,
@@ -224,6 +314,8 @@ module.exports = {
   createCancellationTooLateError,
   createModificationTooLateError,
   createReservationTooLateError,
+
+  // Generic
   createValidationError,
   createServerError
 };

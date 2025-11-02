@@ -2,6 +2,12 @@ const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
 const { validateRegister, validateLogin } = require('../utils/validation');
 const { sendTokenResponse, clearTokenCookie } = require('../utils/authCookies');
+const {
+  createInvalidCredentialsError,
+  createEmailExistsError,
+  createAccountDeletedError,
+  createAccountInactiveError
+} = require('../utils/errorHelpers');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -21,10 +27,8 @@ const register = asyncHandler(async (req, res) => {
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(400).json({
-      success: false,
-      message: 'User already exists with this email',
-    });
+    const errorResponse = createEmailExistsError(email);
+    return res.status(409).json(errorResponse);
   }
 
   // Create user
@@ -57,36 +61,28 @@ const login = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email }).select('+password');
 
   if (!user) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials',
-    });
+    const errorResponse = createInvalidCredentialsError(email);
+    return res.status(401).json(errorResponse);
   }
 
   // Check if password matches
   const isMatch = await user.matchPassword(password);
 
   if (!isMatch) {
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials',
-    });
+    const errorResponse = createInvalidCredentialsError(email);
+    return res.status(401).json(errorResponse);
   }
 
   // Check if account is deleted
   if (user.email && user.email.startsWith('deleted-')) {
-    return res.status(403).json({
-      success: false,
-      message: 'This account has been deleted. Please contact support if you believe this is an error.',
-    });
+    const errorResponse = createAccountDeletedError();
+    return res.status(403).json(errorResponse);
   }
 
   // Check if account is deactivated by admin
   if (!user.isActive) {
-    return res.status(403).json({
-      success: false,
-      message: 'Your account has been deactivated by an administrator. Please contact our support team at support@restoh.com for assistance.',
-    });
+    const errorResponse = createAccountInactiveError();
+    return res.status(403).json(errorResponse);
   }
 
   // Update last login
