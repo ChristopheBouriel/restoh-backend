@@ -13,7 +13,8 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/controllers",
-    "test:integration": "jest tests/integration"
+    "test:integration": "jest tests/integration",
+    "create-admin": "node scripts/createAdmin.js"
   },
   "keywords": [
     "restaurant",
