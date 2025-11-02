@@ -2,6 +2,14 @@ const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
+const {
+  createOrderEmptyItemsError,
+  createOrderInvalidTypeError,
+  createOrderMissingDeliveryAddressError,
+  createOrderNotFoundError,
+  createOrderInvalidStatusError,
+  createValidationError
+} = require('../utils/errorHelpers');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -24,24 +32,18 @@ const createOrder = asyncHandler(async (req, res) => {
 
   // Basic validation
   if (!items || !Array.isArray(items) || items.length === 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Order must contain at least one item',
-    });
+    const errorResponse = createOrderEmptyItemsError();
+    return res.status(400).json(errorResponse);
   }
 
   if (!orderType || !['delivery', 'pickup'].includes(orderType)) {
-    return res.status(400).json({
-      success: false,
-      message: 'Order type must be either delivery or pickup',
-    });
+    const errorResponse = createOrderInvalidTypeError(orderType, ['delivery', 'pickup']);
+    return res.status(400).json(errorResponse);
   }
 
   if (orderType === 'delivery' && !deliveryAddress) {
-    return res.status(400).json({
-      success: false,
-      message: 'Delivery address is required for delivery orders',
-    });
+    const errorResponse = createOrderMissingDeliveryAddressError();
+    return res.status(400).json(errorResponse);
   }
 
   // Calculate totals from provided data or items
@@ -157,18 +159,17 @@ const getOrder = asyncHandler(async (req, res) => {
     .populate('items.menuItem', 'name image category price');
 
   if (!order) {
-    return res.status(404).json({
-      success: false,
-      message: 'Order not found',
-    });
+    const errorResponse = createOrderNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   // Make sure user owns order or is admin
   if (order.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to access this order',
+    const errorResponse = createValidationError('Not authorized to access this order', {
+      orderId: req.params.id,
+      message: 'You can only view your own orders.'
     });
+    return res.status(403).json(errorResponse);
   }
 
   res.status(200).json({
@@ -184,28 +185,25 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;
 
   if (!status) {
-    return res.status(400).json({
-      success: false,
-      message: 'Status is required',
+    const errorResponse = createValidationError('Status is required', {
+      field: 'status',
+      message: 'You must provide a status to update the order.'
     });
+    return res.status(400).json(errorResponse);
   }
 
   const validStatuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
   if (!validStatuses.includes(status)) {
-    return res.status(400).json({
-      success: false,
-      message: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
-    });
+    const errorResponse = createOrderInvalidStatusError('any', status, validStatuses);
+    return res.status(400).json(errorResponse);
   }
 
   // Get the original order to check previous status
   const originalOrder = await Order.findById(req.params.id);
 
   if (!originalOrder) {
-    return res.status(404).json({
-      success: false,
-      message: 'Order not found',
-    });
+    const errorResponse = createOrderNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   // Update the order status
@@ -268,40 +266,40 @@ const cancelOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (!order) {
-    return res.status(404).json({
-      success: false,
-      message: 'Order not found',
-    });
+    const errorResponse = createOrderNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   if (order.userId.toString() !== req.user._id.toString()) {
-    return res.status(403).json({
-      success: false,
-      message: 'Not authorized to cancel this order',
+    const errorResponse = createValidationError('Not authorized to cancel this order', {
+      orderId: req.params.id,
+      message: 'You can only cancel your own orders.'
     });
+    return res.status(403).json(errorResponse);
   }
 
   // Check if order can be cancelled
   if (order.status === 'delivered' || order.status === 'cancelled') {
-    return res.status(400).json({
-      success: false,
-      message: 'Cannot cancel order that is already delivered or cancelled',
-    });
+    const errorResponse = createOrderInvalidStatusError(order.status, 'cancelled', []);
+    return res.status(400).json(errorResponse);
   }
 
   // Only allow cancellation if payment is not 'paid' and status is 'pending' or 'confirmed'
   if (order.paymentStatus === 'paid') {
-    return res.status(400).json({
-      success: false,
-      message: 'Cannot cancel paid orders. Please contact customer service for refunds.',
+    const errorResponse = createValidationError('Cannot cancel paid orders', {
+      orderId: req.params.id,
+      paymentStatus: order.paymentStatus,
+      message: 'This order has already been paid and cannot be cancelled online.',
+      suggestion: 'Please contact customer service for refund assistance.',
+      contactEmail: 'support@restoh.com',
+      contactPhone: '+33 1 23 45 67 89'
     });
+    return res.status(400).json(errorResponse);
   }
 
   if (order.status !== 'pending' && order.status !== 'confirmed') {
-    return res.status(400).json({
-      success: false,
-      message: 'Order can only be cancelled when status is pending or confirmed',
-    });
+    const errorResponse = createOrderInvalidStatusError(order.status, 'cancelled', ['pending', 'confirmed']);
+    return res.status(400).json(errorResponse);
   }
 
   order.status = 'cancelled';
@@ -322,18 +320,20 @@ const deleteOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (!order) {
-    return res.status(404).json({
-      success: false,
-      message: 'Order not found',
-    });
+    const errorResponse = createOrderNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   // Only allow deletion of delivered or cancelled orders
   if (order.status !== 'delivered' && order.status !== 'cancelled') {
-    return res.status(400).json({
-      success: false,
-      message: 'Only delivered or cancelled orders can be deleted',
+    const errorResponse = createValidationError('Only delivered or cancelled orders can be deleted', {
+      orderId: req.params.id,
+      currentStatus: order.status,
+      allowedStatuses: ['delivered', 'cancelled'],
+      message: `This order is currently ${order.status}. Orders can only be deleted when they are delivered or cancelled.`,
+      suggestion: 'Update the order status first or wait until the order is completed.'
     });
+    return res.status(400).json(errorResponse);
   }
 
   await Order.findByIdAndDelete(req.params.id);

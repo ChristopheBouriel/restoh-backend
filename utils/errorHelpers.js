@@ -266,6 +266,151 @@ const createReservationTooLateError = (hoursUntil, contactPhone = '+33 1 23 45 6
   };
 };
 
+// ========================================
+// ORDER ERRORS
+// ========================================
+
+/**
+ * Create an empty items error
+ * @returns {Object} Structured error response
+ */
+const createOrderEmptyItemsError = () => {
+  return {
+    success: false,
+    error: 'Order must contain at least one item',
+    code: ERROR_CODES.ORDER_EMPTY_ITEMS,
+    details: {
+      field: 'items',
+      message: 'You cannot place an order without any items.',
+      suggestion: 'Add items to your cart before placing an order.'
+    }
+  };
+};
+
+/**
+ * Create an invalid order type error
+ * @param {string} providedType - The invalid type provided
+ * @param {Array<string>} validTypes - Valid order types
+ * @returns {Object} Structured error response
+ */
+const createOrderInvalidTypeError = (providedType, validTypes = ['dine-in', 'takeaway', 'delivery']) => {
+  return {
+    success: false,
+    error: `Invalid order type: ${providedType}`,
+    code: ERROR_CODES.ORDER_INVALID_TYPE,
+    details: {
+      field: 'orderType',
+      providedValue: providedType,
+      validValues: validTypes,
+      message: `Order type must be one of: ${validTypes.join(', ')}.`
+    }
+  };
+};
+
+/**
+ * Create a missing delivery address error
+ * @returns {Object} Structured error response
+ */
+const createOrderMissingDeliveryAddressError = () => {
+  return {
+    success: false,
+    error: 'Delivery address is required for delivery orders',
+    code: ERROR_CODES.ORDER_MISSING_DELIVERY_ADDRESS,
+    details: {
+      field: 'deliveryAddress',
+      message: 'For delivery orders, you must provide a complete delivery address.',
+      requiredFields: ['street', 'city', 'zipCode'],
+      suggestion: 'Update your profile with a delivery address or choose a different order type.'
+    }
+  };
+};
+
+/**
+ * Create an order not found error
+ * @param {string} orderId - Order ID that was not found
+ * @returns {Object} Structured error response
+ */
+const createOrderNotFoundError = (orderId = null) => {
+  return {
+    success: false,
+    error: 'Order not found',
+    code: ERROR_CODES.ORDER_NOT_FOUND,
+    details: {
+      orderId,
+      message: 'The requested order does not exist or has been deleted.',
+      suggestion: 'Check your order history or contact support if you believe this is an error.'
+    }
+  };
+};
+
+/**
+ * Create an invalid order status error
+ * @param {string} currentStatus - Current order status
+ * @param {string} attemptedStatus - Status user tried to set
+ * @param {Array<string>} validTransitions - Valid status transitions from current status
+ * @returns {Object} Structured error response
+ */
+const createOrderInvalidStatusError = (currentStatus, attemptedStatus, validTransitions = []) => {
+  return {
+    success: false,
+    error: `Cannot change order status from ${currentStatus} to ${attemptedStatus}`,
+    code: ERROR_CODES.ORDER_INVALID_STATUS,
+    details: {
+      currentStatus,
+      attemptedStatus,
+      validTransitions,
+      message: validTransitions.length > 0
+        ? `This order is currently ${currentStatus}. Valid transitions are: ${validTransitions.join(', ')}.`
+        : `This order is ${currentStatus} and cannot be modified.`
+    }
+  };
+};
+
+/**
+ * Create a payment failed error
+ * @param {string} reason - Reason for payment failure
+ * @param {Object} paymentDetails - Additional payment details
+ * @returns {Object} Structured error response
+ */
+const createPaymentFailedError = (reason = 'Unknown error', paymentDetails = {}) => {
+  return {
+    success: false,
+    error: 'Payment processing failed',
+    code: ERROR_CODES.PAYMENT_FAILED,
+    details: {
+      reason,
+      message: 'We were unable to process your payment.',
+      suggestion: 'Please check your payment details and try again, or contact your bank.',
+      contactSupport: 'support@restoh.com',
+      ...paymentDetails
+    }
+  };
+};
+
+/**
+ * Create a menu item unavailable error
+ * @param {string} itemName - Name of unavailable item
+ * @param {string} itemId - ID of unavailable item
+ * @returns {Object} Structured error response
+ */
+const createMenuItemUnavailableError = (itemName, itemId = null) => {
+  return {
+    success: false,
+    error: `${itemName} is currently unavailable`,
+    code: ERROR_CODES.MENU_ITEM_UNAVAILABLE,
+    details: {
+      itemName,
+      itemId,
+      message: 'This item is temporarily unavailable and cannot be ordered.',
+      suggestion: 'Please remove this item from your order or choose a substitute.'
+    }
+  };
+};
+
+// ========================================
+// GENERIC ERRORS
+// ========================================
+
 /**
  * Create a generic validation error
  * @param {string} message - Error message
@@ -314,6 +459,15 @@ module.exports = {
   createCancellationTooLateError,
   createModificationTooLateError,
   createReservationTooLateError,
+
+  // Orders
+  createOrderEmptyItemsError,
+  createOrderInvalidTypeError,
+  createOrderMissingDeliveryAddressError,
+  createOrderNotFoundError,
+  createOrderInvalidStatusError,
+  createPaymentFailedError,
+  createMenuItemUnavailableError,
 
   // Generic
   createValidationError,
