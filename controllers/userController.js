@@ -1,5 +1,11 @@
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
+const {
+  createUserNotFoundError,
+  createUserAlreadyDeletedError,
+  createCannotModifyDeletedAccountError,
+  createCannotDeleteOwnAccountError
+} = require('../utils/errorHelpers');
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -67,10 +73,8 @@ const getUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('-password');
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
+    const errorResponse = createUserNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   res.status(200).json({
@@ -89,18 +93,14 @@ const updateUser = asyncHandler(async (req, res) => {
   const existingUser = await User.findById(req.params.id);
 
   if (!existingUser) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
+    const errorResponse = createUserNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   // Prevent modification of deleted accounts
   if (existingUser.email && existingUser.email.startsWith('deleted-')) {
-    return res.status(400).json({
-      success: false,
-      message: 'Cannot modify a deleted account',
-    });
+    const errorResponse = createCannotModifyDeletedAccountError(req.params.id);
+    return res.status(400).json(errorResponse);
   }
 
   const fieldsToUpdate = {
@@ -134,26 +134,20 @@ const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (!user) {
-    return res.status(404).json({
-      success: false,
-      message: 'User not found',
-    });
+    const errorResponse = createUserNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   // Don't allow admin to delete themselves
   if (user._id.toString() === req.user.id) {
-    return res.status(400).json({
-      success: false,
-      message: 'Cannot delete your own account',
-    });
+    const errorResponse = createCannotDeleteOwnAccountError();
+    return res.status(400).json(errorResponse);
   }
 
   // Prevent deletion of already deleted accounts
   if (user.email && user.email.startsWith('deleted-')) {
-    return res.status(400).json({
-      success: false,
-      message: 'This account is already deleted',
-    });
+    const errorResponse = createUserAlreadyDeletedError(req.params.id);
+    return res.status(400).json(errorResponse);
   }
 
   await User.findByIdAndDelete(req.params.id);

@@ -4,6 +4,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const { validateLogin, validateMenuItem } = require('../utils/validation');
 const { getTempUsers } = require('./authController');
 const { getTempMenuItems } = require('./menuController');
+const { createAdminInvalidCredentialsError } = require('../utils/errorHelpers');
 
 // @desc    Admin login
 // @route   POST /api/admin/login
@@ -25,20 +26,16 @@ const adminLogin = asyncHandler(async (req, res) => {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user || user.role !== 'admin') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin credentials',
-      });
+      const errorResponse = createAdminInvalidCredentialsError();
+      return res.status(401).json(errorResponse);
     }
 
     // Check if password matches
     const isMatch = await user.matchPassword(password);
 
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin credentials',
-      });
+      const errorResponse = createAdminInvalidCredentialsError();
+      return res.status(401).json(errorResponse);
     }
 
     // Update last login
@@ -65,12 +62,10 @@ const adminLogin = asyncHandler(async (req, res) => {
     
     const tempUsers = getTempUsers();
     const tempUser = tempUsers.find(u => u.email === email && u.role === 'admin');
-    
+
     if (!tempUser) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin credentials',
-      });
+      const errorResponse = createAdminInvalidCredentialsError();
+      return res.status(401).json(errorResponse);
     }
 
     // Check password
@@ -78,10 +73,8 @@ const adminLogin = asyncHandler(async (req, res) => {
     const isMatch = await bcrypt.compare(password, tempUser.password);
 
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid admin credentials',
-      });
+      const errorResponse = createAdminInvalidCredentialsError();
+      return res.status(401).json(errorResponse);
     }
 
     // Update last login

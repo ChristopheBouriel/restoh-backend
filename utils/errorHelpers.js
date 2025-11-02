@@ -267,6 +267,97 @@ const createReservationTooLateError = (hoursUntil, contactPhone = '+33 1 23 45 6
 };
 
 // ========================================
+// USER MANAGEMENT ERRORS
+// ========================================
+
+/**
+ * Create a user not found error
+ * @param {string} userId - User ID that was not found
+ * @returns {Object} Structured error response
+ */
+const createUserNotFoundError = (userId = null) => {
+  return {
+    success: false,
+    error: 'User not found',
+    code: ERROR_CODES.USER_NOT_FOUND,
+    details: {
+      userId,
+      message: 'The requested user does not exist or has been deleted.',
+      suggestion: 'Check the user ID or contact support if you believe this is an error.'
+    }
+  };
+};
+
+/**
+ * Create a user already deleted error
+ * @param {string} userId - User ID
+ * @returns {Object} Structured error response
+ */
+const createUserAlreadyDeletedError = (userId = null) => {
+  return {
+    success: false,
+    error: 'This account is already deleted',
+    code: ERROR_CODES.USER_ALREADY_DELETED,
+    details: {
+      userId,
+      message: 'This user account has already been deleted.',
+      suggestion: 'No further action is needed.'
+    }
+  };
+};
+
+/**
+ * Create a cannot modify deleted account error
+ * @param {string} userId - User ID
+ * @returns {Object} Structured error response
+ */
+const createCannotModifyDeletedAccountError = (userId = null) => {
+  return {
+    success: false,
+    error: 'Cannot modify a deleted account',
+    code: ERROR_CODES.CANNOT_MODIFY_DELETED_ACCOUNT,
+    details: {
+      userId,
+      message: 'This account has been deleted and cannot be modified.',
+      suggestion: 'Deleted accounts are archived and cannot be edited.'
+    }
+  };
+};
+
+/**
+ * Create a cannot delete own account error
+ * @returns {Object} Structured error response
+ */
+const createCannotDeleteOwnAccountError = () => {
+  return {
+    success: false,
+    error: 'Cannot delete your own account',
+    code: ERROR_CODES.CANNOT_DELETE_OWN_ACCOUNT,
+    details: {
+      message: 'You cannot delete your own administrator account.',
+      suggestion: 'Ask another administrator to delete your account if needed.'
+    }
+  };
+};
+
+/**
+ * Create an admin invalid credentials error
+ * @returns {Object} Structured error response
+ */
+const createAdminInvalidCredentialsError = () => {
+  return {
+    success: false,
+    error: 'Invalid admin credentials',
+    code: ERROR_CODES.ADMIN_INVALID_CREDENTIALS,
+    details: {
+      message: 'Invalid email or password for admin login.',
+      suggestion: 'Please check your admin credentials and try again.',
+      field: 'email'
+    }
+  };
+};
+
+// ========================================
 // ORDER ERRORS
 // ========================================
 
@@ -450,6 +541,13 @@ module.exports = {
   createEmailExistsError,
   createAccountDeletedError,
   createAccountInactiveError,
+
+  // User Management
+  createUserNotFoundError,
+  createUserAlreadyDeletedError,
+  createCannotModifyDeletedAccountError,
+  createCannotDeleteOwnAccountError,
+  createAdminInvalidCredentialsError,
 
   // Reservations
   createTablesUnavailableError,
