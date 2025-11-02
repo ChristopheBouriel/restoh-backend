@@ -358,6 +358,81 @@ const createAdminInvalidCredentialsError = () => {
 };
 
 // ========================================
+// MENU ERRORS
+// ========================================
+
+/**
+ * Create a menu item not found error
+ * @param {string} menuItemId - Menu item ID that was not found
+ * @returns {Object} Structured error response
+ */
+const createMenuItemNotFoundError = (menuItemId = null) => {
+  return {
+    success: false,
+    error: 'Menu item not found',
+    code: ERROR_CODES.MENU_ITEM_NOT_FOUND,
+    details: {
+      menuItemId,
+      message: 'The requested menu item does not exist or has been removed.',
+      suggestion: 'Check the menu item ID or browse our menu for available items.'
+    }
+  };
+};
+
+/**
+ * Create a nothing to update error
+ * @returns {Object} Structured error response
+ */
+const createMenuNothingToUpdateError = () => {
+  return {
+    success: false,
+    error: 'Nothing to modify',
+    code: ERROR_CODES.MENU_NOTHING_TO_UPDATE,
+    details: {
+      message: 'No fields were provided to update.',
+      suggestion: 'Provide at least one field to update (name, price, description, etc.).'
+    }
+  };
+};
+
+/**
+ * Create an invalid rating error
+ * @param {number} providedRating - The invalid rating provided
+ * @returns {Object} Structured error response
+ */
+const createInvalidRatingError = (providedRating = null) => {
+  return {
+    success: false,
+    error: 'Rating must be between 1 and 5',
+    code: ERROR_CODES.INVALID_RATING,
+    details: {
+      field: 'rating',
+      providedValue: providedRating,
+      validRange: { min: 1, max: 5 },
+      message: 'Please provide a rating between 1 (poor) and 5 (excellent).'
+    }
+  };
+};
+
+/**
+ * Create a review already exists error
+ * @param {string} menuItemId - Menu item ID
+ * @returns {Object} Structured error response
+ */
+const createReviewAlreadyExistsError = (menuItemId = null) => {
+  return {
+    success: false,
+    error: 'You have already reviewed this item',
+    code: ERROR_CODES.REVIEW_ALREADY_EXISTS,
+    details: {
+      menuItemId,
+      message: 'You can only submit one review per menu item.',
+      suggestion: 'To change your review, please contact support or delete your existing review first.'
+    }
+  };
+};
+
+// ========================================
 // ORDER ERRORS
 // ========================================
 
@@ -548,6 +623,12 @@ module.exports = {
   createCannotModifyDeletedAccountError,
   createCannotDeleteOwnAccountError,
   createAdminInvalidCredentialsError,
+
+  // Menu
+  createMenuItemNotFoundError,
+  createMenuNothingToUpdateError,
+  createInvalidRatingError,
+  createReviewAlreadyExistsError,
 
   // Reservations
   createTablesUnavailableError,

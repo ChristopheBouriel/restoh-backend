@@ -2,6 +2,13 @@ const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const { menuSchema } = require('../utils/validation');
 const { deleteImage } = require('../middleware/cloudinaryUpload');
+const {
+  createMenuItemNotFoundError,
+  createMenuNothingToUpdateError,
+  createInvalidRatingError,
+  createReviewAlreadyExistsError,
+  createValidationError
+} = require('../utils/errorHelpers');
 
 // @desc    Get all menu items with filters and pagination
 // @route   GET /api/menu
@@ -68,10 +75,8 @@ const getMenuItem = asyncHandler(async (req, res) => {
   const menuItem = await MenuItem.findById(req.params.id);
 
   if (!menuItem) {
-    return res.status(404).json({
-      success: false,
-      message: 'Menu item not found',
-    });
+    const errorResponse = createMenuItemNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   res.status(200).json({
@@ -86,10 +91,11 @@ const getMenuItem = asyncHandler(async (req, res) => {
 const createMenuItem = asyncHandler(async (req, res) => {
   const { error } = menuSchema.validate(req.body);
   if (error) {
-    return res.status(400).json({
-      success: false,
-      message: `Validation error: ${error.details[0].message}`,
+    const errorResponse = createValidationError(`Validation error: ${error.details[0].message}`, {
+      field: error.details[0].path.join('.'),
+      message: error.details[0].message
     });
+    return res.status(400).json(errorResponse);
   }
 
   const menuItem = await MenuItem.create(req.body);
@@ -107,19 +113,15 @@ const createMenuItem = asyncHandler(async (req, res) => {
 const updateMenuItem = asyncHandler(async (req, res) => {
   const toUpdate = Object.keys(req.body);
     if(toUpdate.length < 1 && !req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'Nothing to modify',
-      });
+      const errorResponse = createMenuNothingToUpdateError();
+      return res.status(400).json(errorResponse);
     }
 
     // Get existing menu item first to check for old image
     const existingMenuItem = await MenuItem.findById(req.params.id);
     if (!existingMenuItem) {
-      return res.status(404).json({
-        success: false,
-        message: 'Menu item not found',
-      });
+      const errorResponse = createMenuItemNotFoundError(req.params.id);
+      return res.status(404).json(errorResponse);
     }
 
     // If new image is provided, delete the old one from Cloudinary
@@ -145,10 +147,10 @@ const updateMenuItem = asyncHandler(async (req, res) => {
     }
 
     if(errors.length) {
-      return res.status(400).json({
-          success: false,
-          message: `Validation error: ${errors.join(', ')}`,
-        });
+      const errorResponse = createValidationError(`Validation error: ${errors.join(', ')}`, {
+        errors: errors
+      });
+      return res.status(400).json(errorResponse);
     }
 
     const menuItem = await MenuItem.findByIdAndUpdate(req.params.id, { $set: req.body }, {
@@ -157,11 +159,9 @@ const updateMenuItem = asyncHandler(async (req, res) => {
     });
 
     if (!menuItem) {
-    return res.status(404).json({
-      success: false,
-      message: 'Menu item not found',
-    });
-  }
+      const errorResponse = createMenuItemNotFoundError(req.params.id);
+      return res.status(404).json(errorResponse);
+    }
 
     res.status(200).json({
       success: true,
@@ -177,10 +177,8 @@ const deleteMenuItem = asyncHandler(async (req, res) => {
   const menuItem = await MenuItem.findById(req.params.id);
 
   if (!menuItem) {
-    return res.status(404).json({
-      success: false,
-      message: 'Menu item not found',
-    });
+    const errorResponse = createMenuItemNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   if (menuItem.cloudinaryPublicId) {
@@ -206,19 +204,15 @@ const addReview = asyncHandler(async (req, res) => {
   const { rating, comment } = req.body;
 
   if (!rating || rating < 1 || rating > 5) {
-    return res.status(400).json({
-      success: false,
-      message: 'Rating must be between 1 and 5',
-    });
+    const errorResponse = createInvalidRatingError(rating);
+    return res.status(400).json(errorResponse);
   }
 
   const menuItem = await MenuItem.findById(req.params.id);
 
   if (!menuItem) {
-    return res.status(404).json({
-      success: false,
-      message: 'Menu item not found',
-    });
+    const errorResponse = createMenuItemNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   const existingReview = menuItem.reviews.find(
@@ -226,10 +220,8 @@ const addReview = asyncHandler(async (req, res) => {
   );
 
   if (existingReview) {
-    return res.status(400).json({
-      success: false,
-      message: 'You have already reviewed this item',
-    });
+    const errorResponse = createReviewAlreadyExistsError(req.params.id);
+    return res.status(400).json(errorResponse);
   }
 
   const newReview = {
