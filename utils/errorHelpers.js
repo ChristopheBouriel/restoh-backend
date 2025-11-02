@@ -358,6 +358,183 @@ const createAdminInvalidCredentialsError = () => {
 };
 
 // ========================================
+// TABLE ERRORS
+// ========================================
+
+/**
+ * Create a table not found error
+ * @param {string} tableId - Table ID that was not found
+ * @returns {Object} Structured error response
+ */
+const createTableNotFoundError = (tableId = null) => {
+  return {
+    success: false,
+    error: 'Table not found',
+    code: ERROR_CODES.TABLE_NOT_FOUND,
+    details: {
+      tableId,
+      message: 'The requested table does not exist.',
+      suggestion: 'Check the table ID or view available tables.'
+    }
+  };
+};
+
+/**
+ * Create a date required error
+ * @returns {Object} Structured error response
+ */
+const createDateRequiredError = () => {
+  return {
+    success: false,
+    error: 'Date parameter is required',
+    code: ERROR_CODES.DATE_REQUIRED,
+    details: {
+      field: 'date',
+      message: 'You must provide a date to check table availability.',
+      format: 'YYYY-MM-DD',
+      example: '2024-12-25'
+    }
+  };
+};
+
+/**
+ * Create a date and slot required error
+ * @returns {Object} Structured error response
+ */
+const createDateAndSlotRequiredError = () => {
+  return {
+    success: false,
+    error: 'Date and slot parameters are required',
+    code: ERROR_CODES.DATE_AND_SLOT_REQUIRED,
+    details: {
+      requiredFields: ['date', 'slot'],
+      message: 'Both date and time slot are required to find available tables.',
+      dateFormat: 'YYYY-MM-DD',
+      slotRange: { min: 1, max: 9 }
+    }
+  };
+};
+
+/**
+ * Create an invalid slot number error
+ * @param {number} providedSlot - The invalid slot number provided
+ * @param {number} maxSlot - Maximum allowed slot (7 for bookings, 9 for availability)
+ * @returns {Object} Structured error response
+ */
+const createInvalidSlotNumberError = (providedSlot = null, maxSlot = 9) => {
+  return {
+    success: false,
+    error: `Slot must be between 1 and ${maxSlot}`,
+    code: ERROR_CODES.INVALID_SLOT_NUMBER,
+    details: {
+      field: 'slot',
+      providedValue: providedSlot,
+      validRange: { min: 1, max: maxSlot },
+      message: maxSlot === 7
+        ? 'For bookings, slot must be between 1 and 7 (requires 3 consecutive slots).'
+        : 'Time slot must be between 1 and 9.'
+    }
+  };
+};
+
+// ========================================
+// PAYMENT ERRORS
+// ========================================
+
+/**
+ * Create an invalid amount error
+ * @param {number} providedAmount - The invalid amount provided
+ * @returns {Object} Structured error response
+ */
+const createInvalidAmountError = (providedAmount = null) => {
+  return {
+    success: false,
+    error: 'Valid amount is required',
+    code: ERROR_CODES.INVALID_AMOUNT,
+    details: {
+      field: 'amount',
+      providedValue: providedAmount,
+      message: 'Payment amount must be a positive number greater than 0.',
+      suggestion: 'Provide a valid amount in the currency specified.'
+    }
+  };
+};
+
+/**
+ * Create a payment intent ID required error
+ * @returns {Object} Structured error response
+ */
+const createPaymentIntentIdRequiredError = () => {
+  return {
+    success: false,
+    error: 'Payment intent ID is required',
+    code: ERROR_CODES.PAYMENT_INTENT_ID_REQUIRED,
+    details: {
+      field: 'paymentIntentId',
+      message: 'You must provide a payment intent ID to confirm the payment.',
+      suggestion: 'Create a payment intent first, then use the returned ID to confirm.'
+    }
+  };
+};
+
+/**
+ * Create a payment intent creation failed error
+ * @param {string} reason - Reason for failure
+ * @returns {Object} Structured error response
+ */
+const createPaymentIntentCreationFailedError = (reason = 'Unknown error') => {
+  return {
+    success: false,
+    error: 'Failed to create payment intent',
+    code: ERROR_CODES.PAYMENT_INTENT_CREATION_FAILED,
+    details: {
+      reason,
+      message: 'Unable to initialize the payment process.',
+      suggestion: 'Please try again or contact support if the problem persists.',
+      contactSupport: 'support@restoh.com'
+    }
+  };
+};
+
+/**
+ * Create a payment not completed error
+ * @param {string} currentStatus - Current payment status
+ * @returns {Object} Structured error response
+ */
+const createPaymentNotCompletedError = (currentStatus = 'unknown') => {
+  return {
+    success: false,
+    error: 'Payment not completed',
+    code: ERROR_CODES.PAYMENT_NOT_COMPLETED,
+    details: {
+      currentStatus,
+      message: `The payment is currently ${currentStatus} and has not been completed.`,
+      suggestion: 'Please complete the payment process or try again.',
+      possibleStatuses: ['requires_payment_method', 'requires_confirmation', 'requires_action', 'processing', 'canceled']
+    }
+  };
+};
+
+/**
+ * Create a payment confirmation failed error
+ * @param {string} reason - Reason for failure
+ * @returns {Object} Structured error response
+ */
+const createPaymentConfirmationFailedError = (reason = 'Unknown error') => {
+  return {
+    success: false,
+    error: 'Failed to confirm payment',
+    code: ERROR_CODES.PAYMENT_CONFIRMATION_FAILED,
+    details: {
+      reason,
+      message: 'Unable to verify the payment status.',
+      suggestion: 'Please try again or contact support if the problem persists.',
+      contactSupport: 'support@restoh.com'
+    }
+  };
+};
+
+// ========================================
 // MENU ERRORS
 // ========================================
 
@@ -623,6 +800,19 @@ module.exports = {
   createCannotModifyDeletedAccountError,
   createCannotDeleteOwnAccountError,
   createAdminInvalidCredentialsError,
+
+  // Tables
+  createTableNotFoundError,
+  createDateRequiredError,
+  createDateAndSlotRequiredError,
+  createInvalidSlotNumberError,
+
+  // Payment
+  createInvalidAmountError,
+  createPaymentIntentIdRequiredError,
+  createPaymentIntentCreationFailedError,
+  createPaymentNotCompletedError,
+  createPaymentConfirmationFailedError,
 
   // Menu
   createMenuItemNotFoundError,

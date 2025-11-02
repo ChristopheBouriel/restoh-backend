@@ -1,5 +1,12 @@
 const Stripe = require('stripe');
 const asyncHandler = require('../utils/asyncHandler');
+const {
+  createInvalidAmountError,
+  createPaymentIntentIdRequiredError,
+  createPaymentIntentCreationFailedError,
+  createPaymentNotCompletedError,
+  createPaymentConfirmationFailedError
+} = require('../utils/errorHelpers');
 
 // Initialize payment gateway
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_demo_key'); // Demo key
@@ -12,10 +19,8 @@ const createStripePaymentIntent = asyncHandler(async (req, res) => {
   const { amount, currency = 'usd' } = req.body;
 
   if (!amount || amount <= 0) {
-    return res.status(400).json({
-      success: false,
-      message: 'Valid amount is required',
-    });
+    const errorResponse = createInvalidAmountError(amount);
+    return res.status(400).json(errorResponse);
   }
 
   try {
@@ -36,11 +41,8 @@ const createStripePaymentIntent = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Stripe payment intent error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create payment intent',
-      error: error.message,
-    });
+    const errorResponse = createPaymentIntentCreationFailedError(error.message);
+    res.status(500).json(errorResponse);
   }
 });
 
@@ -51,10 +53,8 @@ const confirmStripePayment = asyncHandler(async (req, res) => {
   const { paymentIntentId } = req.body;
 
   if (!paymentIntentId) {
-    return res.status(400).json({
-      success: false,
-      message: 'Payment intent ID is required',
-    });
+    const errorResponse = createPaymentIntentIdRequiredError();
+    return res.status(400).json(errorResponse);
   }
 
   try {
@@ -71,19 +71,13 @@ const confirmStripePayment = asyncHandler(async (req, res) => {
         },
       });
     } else {
-      res.status(400).json({
-        success: false,
-        message: 'Payment not completed',
-        status: paymentIntent.status,
-      });
+      const errorResponse = createPaymentNotCompletedError(paymentIntent.status);
+      res.status(400).json(errorResponse);
     }
   } catch (error) {
     console.error('Stripe payment confirmation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to confirm payment',
-      error: error.message,
-    });
+    const errorResponse = createPaymentConfirmationFailedError(error.message);
+    res.status(500).json(errorResponse);
   }
 });
 

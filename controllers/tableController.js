@@ -6,6 +6,12 @@ const {
   addTableBooking,
   removeTableBooking
 } = require('../utils/reservationHelpers');
+const {
+  createTableNotFoundError,
+  createDateRequiredError,
+  createDateAndSlotRequiredError,
+  createInvalidSlotNumberError
+} = require('../utils/errorHelpers');
 
 // @desc    Get all tables
 // @route   GET /api/tables
@@ -27,10 +33,8 @@ const getTableAvailabilityForDate = asyncHandler(async (req, res) => {
   const { date } = req.query;
 
   if (!date) {
-    return res.status(400).json({
-      success: false,
-      message: 'Date parameter is required'
-    });
+    const errorResponse = createDateRequiredError();
+    return res.status(400).json(errorResponse);
   }
 
   const availability = await getTableAvailability(date);
@@ -49,20 +53,16 @@ const getAvailableTables = asyncHandler(async (req, res) => {
   const { date, slot, capacity = 1, excludeReservationId } = req.query;
 
   if (!date || !slot) {
-    return res.status(400).json({
-      success: false,
-      message: 'Date and slot parameters are required'
-    });
+    const errorResponse = createDateAndSlotRequiredError();
+    return res.status(400).json(errorResponse);
   }
 
   const slotNumber = parseInt(slot, 10);
   const requiredCapacity = parseInt(capacity, 10);
 
   if (slotNumber < 1 || slotNumber > 9) {
-    return res.status(400).json({
-      success: false,
-      message: 'Slot must be between 1 and 9'
-    });
+    const errorResponse = createInvalidSlotNumberError(slotNumber, 9);
+    return res.status(400).json(errorResponse);
   }
 
   const tables = await findAvailableTables(date, slotNumber, requiredCapacity, excludeReservationId);
@@ -84,10 +84,8 @@ const getTable = asyncHandler(async (req, res) => {
   const table = await Table.findById(req.params.id);
 
   if (!table) {
-    return res.status(404).json({
-      success: false,
-      message: 'Table not found'
-    });
+    const errorResponse = createTableNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   res.status(200).json({
@@ -114,10 +112,8 @@ const updateTable = asyncHandler(async (req, res) => {
   );
 
   if (!table) {
-    return res.status(404).json({
-      success: false,
-      message: 'Table not found'
-    });
+    const errorResponse = createTableNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   res.status(200).json({
@@ -134,26 +130,20 @@ const addBookingToTable = asyncHandler(async (req, res) => {
   const { date, slot } = req.body;
 
   if (!date || !slot) {
-    return res.status(400).json({
-      success: false,
-      message: 'Date and slot are required'
-    });
+    const errorResponse = createDateAndSlotRequiredError();
+    return res.status(400).json(errorResponse);
   }
 
   const slotNumber = parseInt(slot, 10);
   if (slotNumber < 1 || slotNumber > 7) {
-    return res.status(400).json({
-      success: false,
-      message: 'Slot must be between 1 and 7 (requires 3 consecutive slots)'
-    });
+    const errorResponse = createInvalidSlotNumberError(slotNumber, 7);
+    return res.status(400).json(errorResponse);
   }
 
   const table = await Table.findById(req.params.id);
   if (!table) {
-    return res.status(404).json({
-      success: false,
-      message: 'Table not found'
-    });
+    const errorResponse = createTableNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   await addTableBooking(table, date, slotNumber);
@@ -172,26 +162,20 @@ const removeBookingFromTable = asyncHandler(async (req, res) => {
   const { date, slot } = req.body;
 
   if (!date || !slot) {
-    return res.status(400).json({
-      success: false,
-      message: 'Date and slot are required'
-    });
+    const errorResponse = createDateAndSlotRequiredError();
+    return res.status(400).json(errorResponse);
   }
 
   const slotNumber = parseInt(slot, 10);
   if (slotNumber < 1 || slotNumber > 7) {
-    return res.status(400).json({
-      success: false,
-      message: 'Slot must be between 1 and 7 (requires 3 consecutive slots)'
-    });
+    const errorResponse = createInvalidSlotNumberError(slotNumber, 7);
+    return res.status(400).json(errorResponse);
   }
 
   const table = await Table.findById(req.params.id);
   if (!table) {
-    return res.status(404).json({
-      success: false,
-      message: 'Table not found'
-    });
+    const errorResponse = createTableNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
   }
 
   await removeTableBooking(table, date, slotNumber);
