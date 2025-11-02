@@ -751,6 +751,48 @@ const createMenuItemUnavailableError = (itemName, itemId = null) => {
 };
 
 // ========================================
+// CONTACT ERRORS
+// ========================================
+
+/**
+ * Create a contact message not found error
+ * @param {string} messageId - Message ID that was not found
+ * @returns {Object} Structured error response
+ */
+const createContactMessageNotFoundError = (messageId = null) => {
+  return {
+    success: false,
+    error: 'Contact message not found',
+    code: ERROR_CODES.CONTACT_MESSAGE_NOT_FOUND,
+    details: {
+      messageId,
+      message: 'The requested contact message does not exist or has been deleted.',
+      suggestion: 'Check the message ID or view the list of contact messages.'
+    }
+  };
+};
+
+/**
+ * Create an invalid contact status error
+ * @param {string} providedStatus - The invalid status provided
+ * @param {Array<string>} validStatuses - Valid contact statuses
+ * @returns {Object} Structured error response
+ */
+const createInvalidContactStatusError = (providedStatus = null, validStatuses = ['new', 'read', 'replied', 'resolved']) => {
+  return {
+    success: false,
+    error: 'Invalid status',
+    code: ERROR_CODES.INVALID_CONTACT_STATUS,
+    details: {
+      field: 'status',
+      providedValue: providedStatus,
+      validValues: validStatuses,
+      message: `Status must be one of: ${validStatuses.join(', ')}.`
+    }
+  };
+};
+
+// ========================================
 // GENERIC ERRORS
 // ========================================
 
@@ -837,6 +879,10 @@ module.exports = {
   createOrderInvalidStatusError,
   createPaymentFailedError,
   createMenuItemUnavailableError,
+
+  // Contact
+  createContactMessageNotFoundError,
+  createInvalidContactStatusError,
 
   // Generic
   createValidationError,
