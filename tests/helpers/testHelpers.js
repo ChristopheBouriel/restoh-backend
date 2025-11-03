@@ -54,12 +54,22 @@ const createTestMenuItem = async (itemData = {}) => {
 };
 
 const createTestOrder = async (orderData = {}) => {
+  // Create a default menu item if menuItemId is not provided
+  let menuItemId = orderData.menuItemId;
+  if (!menuItemId) {
+    const defaultMenuItem = await createTestMenuItem({
+      name: 'Default Test Item for Order',
+      price: 10.99,
+    });
+    menuItemId = defaultMenuItem._id;
+  }
+
   const defaultOrder = {
     userId: orderData.userId,
     userEmail: 'test@example.com',
     userName: 'Test User',
     items: [{
-      menuItem: orderData.menuItemId || null,
+      menuItem: menuItemId,
       name: 'Test Item',
       quantity: 1,
       price: 10.99,

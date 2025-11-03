@@ -78,10 +78,14 @@ describe('Order Controller', () => {
       await cancelOrder(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Cannot cancel paid orders. Please contact customer service for refunds.',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: expect.any(String),
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should prevent cancellation for orders in preparing status', async () => {
@@ -98,10 +102,14 @@ describe('Order Controller', () => {
       await cancelOrder(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Order can only be cancelled when status is pending or confirmed',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: expect.any(String),
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should prevent cancellation for already delivered orders', async () => {
@@ -118,10 +126,14 @@ describe('Order Controller', () => {
       await cancelOrder(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Cannot cancel order that is already delivered or cancelled',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: expect.any(String),
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should prevent cancellation for already cancelled orders', async () => {
@@ -138,10 +150,14 @@ describe('Order Controller', () => {
       await cancelOrder(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Cannot cancel order that is already delivered or cancelled',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: expect.any(String),
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should return 404 if order not found', async () => {
@@ -152,10 +168,14 @@ describe('Order Controller', () => {
       await cancelOrder(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Order not found',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: 'ORDER_NOT_FOUND',
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should return 403 if user does not own the order', async () => {

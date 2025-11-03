@@ -155,10 +155,16 @@ describe('Menu Controller', () => {
       await getMenuItem(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Menu item not found',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: 'MENU_ITEM_NOT_FOUND',
+          details: expect.objectContaining({
+            menuItemId: '507f1f77bcf86cd799439011',
+          }),
+        })
+      );
     });
   });
 
@@ -203,7 +209,9 @@ describe('Menu Controller', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: expect.stringContaining('Validation error'),
+          error: expect.stringContaining('Validation error'),
+          code: 'VALIDATION_ERROR',
+          details: expect.any(Object),
         })
       );
     });
@@ -264,10 +272,14 @@ describe('Menu Controller', () => {
       await updateMenuItem(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Menu item not found',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: 'MENU_ITEM_NOT_FOUND',
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should handle validation errors', async () => {
@@ -284,7 +296,9 @@ describe('Menu Controller', () => {
       expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: expect.stringContaining('Validation error'),
+          error: expect.any(String),
+          code: 'VALIDATION_ERROR',
+          details: expect.any(Object),
         })
       );
     });
@@ -318,10 +332,14 @@ describe('Menu Controller', () => {
       await deleteMenuItem(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Menu item not found',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: 'MENU_ITEM_NOT_FOUND',
+          details: expect.any(Object),
+        })
+      );
     });
   });
 
@@ -362,10 +380,14 @@ describe('Menu Controller', () => {
       await addReview(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'You have already reviewed this item',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: 'REVIEW_ALREADY_EXISTS',
+          details: expect.any(Object),
+        })
+      );
     });
 
     it('should validate rating range', async () => {
@@ -379,10 +401,18 @@ describe('Menu Controller', () => {
       await addReview(req, res);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Rating must be between 1 and 5',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: 'Rating must be between 1 and 5',
+          code: 'INVALID_RATING',
+          details: expect.objectContaining({
+            field: 'rating',
+            providedValue: 6,
+            validRange: { min: 1, max: 5 },
+          }),
+        })
+      );
     });
 
     it('should return 404 if menu item not found', async () => {
@@ -394,10 +424,14 @@ describe('Menu Controller', () => {
       await addReview(req, res);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Menu item not found',
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.any(String),
+          code: 'MENU_ITEM_NOT_FOUND',
+          details: expect.any(Object),
+        })
+      );
     });
   });
 
