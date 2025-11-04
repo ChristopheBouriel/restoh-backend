@@ -8,7 +8,8 @@ const {
   createOrderMissingDeliveryAddressError,
   createOrderNotFoundError,
   createOrderInvalidStatusError,
-  createValidationError
+  createValidationError,
+  createUserNotFoundError
 } = require('../utils/errorHelpers');
 
 // @desc    Create new order
@@ -429,6 +430,62 @@ const getOrderStats = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get orders for a specific user (Admin)
+// @route   GET /api/admin/users/:userId/orders
+// @access  Private/Admin
+const getAdminUserOrders = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  // Check if user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    const errorResponse = createUserNotFoundError(userId);
+    return res.status(404).json(errorResponse);
+  }
+
+  // Pagination
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const startIndex = (page - 1) * limit;
+
+  let query = { userId };
+
+  // Filter by status if provided
+  if (req.query.status) {
+    query.status = req.query.status;
+  }
+
+  const total = await Order.countDocuments(query);
+  const orders = await Order.find(query)
+    .populate('items.menuItem', 'name image category price')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(startIndex);
+
+  // Pagination info
+  const pagination = {};
+  if (startIndex + limit < total) {
+    pagination.next = {
+      page: page + 1,
+      limit,
+    };
+  }
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit,
+    };
+  }
+
+  res.status(200).json({
+    success: true,
+    count: orders.length,
+    total,
+    pagination,
+    data: orders,
+  });
+});
+
 module.exports = {
   createOrder,
   getUserOrders,
@@ -438,4 +495,5 @@ module.exports = {
   deleteOrder,
   getAdminOrders,
   getOrderStats,
+  getAdminUserOrders,
 };

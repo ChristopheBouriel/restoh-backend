@@ -18,7 +18,8 @@ const {
   createCapacityInsufficientError,
   createModificationTooLateError,
   createCancellationTooLateError,
-  createValidationError
+  createValidationError,
+  createUserNotFoundError
 } = require('../utils/errorHelpers');
 
 // @desc    Create new reservation
@@ -702,6 +703,69 @@ const cancelUserReservation = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get reservations for a specific user (Admin)
+// @route   GET /api/admin/users/:userId/reservations
+// @access  Private/Admin
+const getAdminUserReservations = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+
+  // Check if user exists
+  const user = await User.findById(userId);
+  if (!user) {
+    const errorResponse = createUserNotFoundError(userId);
+    return res.status(404).json(errorResponse);
+  }
+
+  // Pagination
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const startIndex = (page - 1) * limit;
+
+  let query = { userId };
+
+  // Filter by status if provided
+  if (req.query.status) {
+    query.status = req.query.status;
+  }
+
+  // Filter by upcoming/past reservations
+  if (req.query.upcoming === 'true') {
+    query.date = { $gte: new Date().setHours(0, 0, 0, 0) };
+  } else if (req.query.past === 'true') {
+    query.date = { $lt: new Date().setHours(0, 0, 0, 0) };
+  }
+
+  const total = await Reservation.countDocuments(query);
+  const reservations = await Reservation.find(query)
+    .populate('userId', 'name email phone')
+    .sort({ date: -1, slot: -1 })
+    .limit(limit)
+    .skip(startIndex);
+
+  // Pagination info
+  const pagination = {};
+  if (startIndex + limit < total) {
+    pagination.next = {
+      page: page + 1,
+      limit,
+    };
+  }
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit,
+    };
+  }
+
+  res.status(200).json({
+    success: true,
+    count: reservations.length,
+    total,
+    pagination,
+    data: reservations,
+  });
+});
+
 module.exports = {
   createReservation,
   getUserReservations,
@@ -711,4 +775,5 @@ module.exports = {
   updateUserReservation,
   cancelUserReservation,
   getReservationStats,
+  getAdminUserReservations,
 };
