@@ -41,9 +41,11 @@ const createReservation = asyncHandler(async (req, res) => {
   if (tableNumber && tableNumber.length > 0) {
     const capacityValidation = await validateTableCapacity(tableNumber, guests);
     if (!capacityValidation.valid) {
-      // Find alternative table suggestions
+      // Find alternative table suggestions (excluding already selected tables)
       const availability = await findAvailableTables(date, slot, guests);
-      const suggestedTables = availability.availableTables.slice(0, 5); // Limit to 5 suggestions
+      const suggestedTables = availability.availableTables
+        .filter(tableNum => !tableNumber.includes(tableNum)) // Exclude already selected tables
+        .slice(0, 5); // Limit to 5 suggestions
 
       // Determine which specific error to return
       let errorResponse;
@@ -431,9 +433,11 @@ const updateUserReservation = asyncHandler(async (req, res) => {
   if (tablesToValidate && tablesToValidate.length > 0) {
     const capacityValidation = await validateTableCapacity(tablesToValidate, guestsToValidate);
     if (!capacityValidation.valid) {
-      // Find alternative table suggestions (excluding current reservation)
+      // Find alternative table suggestions (excluding current reservation and already selected tables)
       const availability = await findAvailableTables(finalDate, finalSlot, guestsToValidate, req.params.id);
-      const suggestedTables = availability.availableTables.slice(0, 5);
+      const suggestedTables = availability.availableTables
+        .filter(tableNum => !tablesToValidate.includes(tableNum)) // Exclude already selected tables
+        .slice(0, 5);
 
       // Determine which specific error to return
       let errorResponse;

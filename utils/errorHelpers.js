@@ -1,4 +1,5 @@
 const ERROR_CODES = require('../constants/errorCodes');
+const GLOBAL_VAR = require('../constants/global');
 
 /**
  * Error Helpers - Utility functions to build standardized error responses
@@ -215,7 +216,7 @@ const createCapacityInsufficientError = (guests, selectedTables, totalCapacity, 
  * @param {string} contactPhone - Restaurant contact phone
  * @returns {Object} Structured error response
  */
-const createCancellationTooLateError = (hoursUntil, contactPhone = '+33 1 23 45 67 89') => {
+const createCancellationTooLateError = (hoursUntil, contactPhone = GLOBAL_VAR.PHONE_NUMBER) => {
   const minutesRemaining = Math.round(hoursUntil * 60);
   const timeDescription = hoursUntil < 1
     ? `${minutesRemaining} minutes`
