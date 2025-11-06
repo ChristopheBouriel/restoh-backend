@@ -69,7 +69,7 @@ const login = asyncHandler(async (req, res) => {
   const isMatch = await user.matchPassword(password);
 
   if (!isMatch) {
-    const errorResponse = createInvalidCredentialsError(email);
+    const errorResponse = createInvalidCredentialsError();
     return res.status(401).json(errorResponse);
   }
 

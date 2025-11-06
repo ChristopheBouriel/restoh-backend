@@ -28,15 +28,27 @@ const ERROR_CODES = require('../constants/errorCodes');
  * @returns {Object} Structured error response
  */
 const createInvalidCredentialsError = (email = null) => {
-  return {
-    success: false,
-    error: 'Invalid email or password',
-    code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-    details: {
-      message: 'Please check your credentials and try again.',
-      field: 'email'
-    }
-  };
+  if (email) {
+    return {
+      success: false,
+      error: 'Invalid email',
+      code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+      details: {
+        message: 'Please check your email and try again.',
+        field: 'email'
+      }
+    };
+  } else {
+    return {
+      success: false,
+      error: 'Invalid password',
+      code: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+      details: {
+        message: 'Please check your password and try again.',
+        field: 'password'
+      }
+    };
+  }
 };
 
 /**
@@ -54,10 +66,6 @@ const createEmailExistsError = (email) => {
       value: email,
       message: 'An account with this email already exists.',
       suggestion: 'Try logging in instead, or use password reset if you forgot your password.',
-      actions: {
-        login: '/login',
-        resetPassword: '/reset-password'
-      }
     }
   };
 };
@@ -90,7 +98,7 @@ const createAccountInactiveError = () => {
     code: ERROR_CODES.AUTH_ACCOUNT_INACTIVE,
     details: {
       message: 'Your account has been deactivated by an administrator.',
-      suggestion: 'Please contact our support team for assistance.',
+      suggestion: 'Please use the contact form to speak with an administrator and resolve this issue.',
       contactEmail: 'support@restoh.com',
       contactPhone: '+33 1 23 45 67 89'
     }
@@ -418,7 +426,7 @@ const createDateAndSlotRequiredError = () => {
 /**
  * Create an invalid slot number error
  * @param {number} providedSlot - The invalid slot number provided
- * @param {number} maxSlot - Maximum allowed slot (7 for bookings, 9 for availability)
+ * @param {number} maxSlot - Maximum allowed slot
  * @returns {Object} Structured error response
  */
 const createInvalidSlotNumberError = (providedSlot = null, maxSlot = 9) => {
@@ -430,9 +438,7 @@ const createInvalidSlotNumberError = (providedSlot = null, maxSlot = 9) => {
       field: 'slot',
       providedValue: providedSlot,
       validRange: { min: 1, max: maxSlot },
-      message: maxSlot === 7
-        ? 'For bookings, slot must be between 1 and 7 (requires 3 consecutive slots).'
-        : 'Time slot must be between 1 and 9.'
+      message: 'Time slot must be between 1 and 9.'
     }
   };
 };

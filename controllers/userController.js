@@ -164,7 +164,6 @@ const deleteUser = asyncHandler(async (req, res) => {
 const getUserStats = asyncHandler(async (req, res) => {
   const totalUsers = await User.countDocuments();
   const activeUsers = await User.countDocuments({ isActive: true });
-  const adminUsers = await User.countDocuments({ role: 'admin' });
   const regularUsers = await User.countDocuments({ role: 'user' });
 
   // Users registered in the last 30 days
@@ -174,11 +173,11 @@ const getUserStats = asyncHandler(async (req, res) => {
     createdAt: { $gte: thirtyDaysAgo },
   });
 
-  // Users who logged in in the last 7 days
+  // Users who logged in in the last 30 days
   const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const recentlyActiveUsers = await User.countDocuments({
-    lastLogin: { $gte: sevenDaysAgo },
+  thirtyDaysAgo.setDate(sevenDaysAgo.getDate() - 30);
+  const recentlyLoggedUsers = await User.countDocuments({
+    lastLogin: { $gte: thirtyDaysAgo },
   });
 
   res.status(200).json({
@@ -187,10 +186,9 @@ const getUserStats = asyncHandler(async (req, res) => {
       totalUsers,
       activeUsers,
       inactiveUsers: totalUsers - activeUsers,
-      adminUsers,
       regularUsers,
       newUsers,
-      recentlyActiveUsers,
+      recentlyLoggedUsers,
     },
   });
 });

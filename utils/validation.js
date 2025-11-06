@@ -72,7 +72,7 @@ const validateOrder = (data) => {
     ).min(1).required(),
     totalPrice: Joi.number().positive().required(),
     orderType: Joi.string().valid('pickup', 'delivery').required(),
-    paymentStatus: Joi.string().valid('pending', 'paid').optional(),
+    paymentStatus: Joi.string().valid('pending', 'paid').required(),
     paymentMethod: Joi.string().valid('cash', 'card').required(),
     deliveryAddress: Joi.string().required(),
     notes: Joi.string().max(200).allow(null).optional(),
@@ -86,7 +86,7 @@ const validateContact = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
-    phone: Joi.string().pattern(/^[+]?[0-9\s\-()]{10,15}$/).optional(),
+    phone: Joi.string().pattern(/^[+]?[0-9\s\-()]{10,15}$/).allow(null).optional(),
     subject: Joi.string().min(5).max(200).required(),
     message: Joi.string().min(10).max(1000).required(),
   });
