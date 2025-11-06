@@ -1,5 +1,6 @@
 const ERROR_CODES = require('../constants/errorCodes');
 const GLOBAL_VAR = require('../constants/global');
+const { formatTimeRemaining } = require('./reservationHelpers');
 
 /**
  * Error Helpers - Utility functions to build standardized error responses
@@ -217,10 +218,7 @@ const createCapacityInsufficientError = (guests, selectedTables, totalCapacity, 
  * @returns {Object} Structured error response
  */
 const createCancellationTooLateError = (hoursUntil, contactPhone = GLOBAL_VAR.PHONE_NUMBER) => {
-  const minutesRemaining = Math.round(hoursUntil * 60);
-  const timeDescription = hoursUntil < 1
-    ? `${minutesRemaining} minutes`
-    : `${hoursUntil.toFixed(1)} hours`;
+  const timeDescription = formatTimeRemaining(hoursUntil);
 
   return {
     success: false,
@@ -239,17 +237,22 @@ const createCancellationTooLateError = (hoursUntil, contactPhone = GLOBAL_VAR.PH
 /**
  * Create a modification too late error
  * @param {number} hoursUntil - Hours until reservation
+ * @param {string} contactPhone - Restaurant contact phone
  * @returns {Object} Structured error response
  */
-const createModificationTooLateError = (hoursUntil) => {
+const createModificationTooLateError = (hoursUntil, contactPhone = GLOBAL_VAR.PHONE_NUMBER) => {
+  const timeDescription = formatTimeRemaining(hoursUntil);
+
   return {
     success: false,
     error: 'Cannot modify reservation less than 1 hour before the original time',
     code: ERROR_CODES.MODIFICATION_TOO_LATE,
     details: {
       hoursRemaining: hoursUntil,
-      message: `Your reservation is in ${hoursUntil.toFixed(1)} hours. Modifications must be made at least 1 hour in advance.`,
-      policy: 'Reservations can be modified up to 1 hour before the scheduled time'
+      message: `Your reservation is in ${timeDescription}. Modifications must be made at least 1 hour in advance.`,
+      policy: 'Reservations can be modified up to 1 hour before the scheduled time',
+      contactPhone,
+      action: `For last-minute modifications, please call us directly at ${contactPhone}`
     }
   };
 };

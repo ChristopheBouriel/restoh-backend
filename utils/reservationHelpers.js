@@ -29,6 +29,18 @@ const getHoursDifference = (laterDate, earlierDate) => {
 };
 
 /**
+ * Format time remaining for user-friendly display
+ * @param {number} hoursUntil - Hours until the event
+ * @returns {string} Formatted time description (e.g., "45 minutes" or "2.5 hours")
+ */
+const formatTimeRemaining = (hoursUntil) => {
+  const minutesRemaining = Math.round(hoursUntil * 60);
+  return hoursUntil < 1
+    ? `${minutesRemaining} minutes`
+    : `${hoursUntil.toFixed(1)} hours`;
+};
+
+/**
  * Check if reservation can be modified (1 hour before original time rule)
  * @param {Date|string} originalDate - Original reservation date
  * @param {number} originalSlot - Original slot number
@@ -135,7 +147,7 @@ const canCancelReservation = (reservationDate, slotNumber, now = new Date()) => 
  * @param {object} reservation - Current reservation object
  * @param {object} updateData - Data to update { date?, slot?, ... }
  * @param {Date} now - Current time (for testing purposes)
- * @returns {object} { isValid: boolean, errors: string[] }
+ * @returns {object} { isValid: boolean, errors: string[], hoursUntil: number }
  */
 const validateReservationUpdate = (reservation, updateData, now = new Date()) => {
   const errors = [];
@@ -159,7 +171,8 @@ const validateReservationUpdate = (reservation, updateData, now = new Date()) =>
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
+    hoursUntil: modifyCheck.hoursUntil
   };
 };
 
@@ -439,6 +452,7 @@ const validateTableCapacity = async (tableNumbers, guests) => {
 module.exports = {
   createReservationDateTime,
   getHoursDifference,
+  formatTimeRemaining,
   canModifyReservation,
   isValidNewReservationTime,
   canCancelReservation,
