@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const Order = require('../models/Order');
+const Reservation = require('../models/Reservation');
 const asyncHandler = require('../utils/asyncHandler');
 const {
   createUserNotFoundError,
@@ -161,7 +163,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @desc    Get user statistics
 // @route   GET /api/users/stats
 // @access  Private/Admin
-const getUserStats = asyncHandler(async (req, res) => {
+const getUsersStats = asyncHandler(async (req, res) => {
   const totalUsers = await User.countDocuments();
   const activeUsers = await User.countDocuments({ isActive: true });
   const regularUsers = await User.countDocuments({ role: 'user' });
@@ -180,6 +182,26 @@ const getUserStats = asyncHandler(async (req, res) => {
     lastLogin: { $gte: thirtyDaysAgo },
   });
 
+  // Users who ordered or reserved in the last 30 days
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+
+  // Get unique user IDs who placed orders in the last month
+  const usersWithOrders = await Order.distinct('userId', {
+    createdAt: { $gte: oneMonthAgo },
+  });
+
+  // Get unique user IDs who made reservations in the last month
+  const usersWithReservations = await Reservation.distinct('userId', {
+    createdAt: { $gte: oneMonthAgo },
+  });
+
+  // Combine both arrays and get unique users (Set prevents counting users twice)
+  const activeCustomers = new Set([
+    ...usersWithOrders.map(id => id.toString()),
+    ...usersWithReservations.map(id => id.toString()),
+  ]);
+
   res.status(200).json({
     success: true,
     data: {
@@ -189,6 +211,7 @@ const getUserStats = asyncHandler(async (req, res) => {
       regularUsers,
       newUsers,
       recentlyLoggedUsers,
+      activeCustomersLastMonth: activeCustomers.size,
     },
   });
 });
@@ -247,6 +270,6 @@ module.exports = {
   getUser,
   updateUser,
   deleteUser,
-  getUserStats,
+  getUsersStats,
   getAdminUsers,
 };

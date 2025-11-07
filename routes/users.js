@@ -4,7 +4,7 @@ const {
   getUser,
   updateUser,
   deleteUser,
-  getUserStats,
+  getUsersStats,
   getAdminUsers,
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/auth');
@@ -20,7 +20,7 @@ router.get('/admin/all', authorize('admin'), getAdminUsers);
 
 // General routes
 router.get('/', getUsers);
-router.get('/stats', getUserStats);
+router.get('/stats', getUsersStats);
 router.get('/:id', getUser);
 router.put('/:id', updateUser);
 router.delete('/:id', deleteUser);
