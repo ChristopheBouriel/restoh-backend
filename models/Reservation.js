@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { getLabelFromSlot } = require('../utils/timeSlots');
 
 const ReservationSchema = new mongoose.Schema({
   userId: {
@@ -80,11 +81,25 @@ const ReservationSchema = new mongoose.Schema({
 ReservationSchema.index({ date: 1, time: 1, tableNumber: 1 }, { unique: true, sparse: true });
 
 // Generate reservation number before saving
+// Format: YYYYMMDD-HHMM-T1-T2-T3
 ReservationSchema.pre('save', function(next) {
   if (!this.reservationNumber) {
-    const timestamp = Date.now().toString();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    this.reservationNumber = `RES-${timestamp.slice(-6)}${random}`;
+    // Format date: YYYYMMDD
+    const reservationDate = new Date(this.date);
+    const year = reservationDate.getFullYear();
+    const month = String(reservationDate.getMonth() + 1).padStart(2, '0');
+    const day = String(reservationDate.getDate()).padStart(2, '0');
+    const dateStr = `${year}${month}${day}`;
+
+    // Format time from slot: HHMM
+    const timeLabel = getLabelFromSlot(this.slot); // Returns "HH:MM"
+    const timeStr = timeLabel.replace(':', ''); // Remove colon: "HHMM"
+
+    // Format table numbers: T1-T2-T3
+    const tablesStr = this.tableNumber.sort((a, b) => a - b).join('-');
+
+    // Combine all parts
+    this.reservationNumber = `${dateStr}-${timeStr}-${tablesStr}`;
   }
   next();
 });
