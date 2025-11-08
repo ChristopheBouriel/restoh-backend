@@ -105,4 +105,7 @@ UserSchema.methods.updateLastLogin = function() {
   return this.save({ validateBeforeSave: false });
 };
 
+// Add index for performance on date-based queries
+UserSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('User', UserSchema);

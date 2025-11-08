@@ -16,7 +16,7 @@ router.use(protect);
 router.use(authorize('admin'));
 
 // Admin routes (must come before general routes)
-router.get('/admin/all', authorize('admin'), getAdminUsers);
+router.get('/admin', authorize('admin'), getAdminUsers);
 
 // General routes
 router.get('/', getUsers);

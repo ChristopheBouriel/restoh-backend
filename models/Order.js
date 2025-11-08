@@ -137,4 +137,7 @@ OrderSchema.methods.calculateEstimatedDeliveryTime = function() {
   return this.save();
 };
 
+// Add index for performance on date-based queries
+OrderSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Order', OrderSchema);

@@ -430,6 +430,119 @@ const getOrderStats = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get recent orders (last 30 days) for admin
+// @route   GET /api/orders/admin/recent
+// @access  Private/Admin
+const getRecentAdminOrders = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100); // Max 100
+  const status = req.query.status;
+
+  // Calculate date 30 days ago
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  let query = {
+    createdAt: { $gte: thirtyDaysAgo }
+  };
+
+  if (status) query.status = status;
+
+  const startIndex = (page - 1) * limit;
+  const total = await Order.countDocuments(query);
+  const orders = await Order.find(query)
+    .populate('items.menuItem', 'name price')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(startIndex);
+
+  const totalPages = Math.ceil(total / limit);
+  const hasMore = page < totalPages;
+
+  res.status(200).json({
+    success: true,
+    data: orders,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore
+    }
+  });
+});
+
+// @desc    Get historical orders (> 30 days) for admin
+// @route   GET /api/orders/admin/history
+// @access  Private/Admin
+const getHistoricalAdminOrders = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 20, 50); // Max 50
+  const status = req.query.status;
+  const search = req.query.search;
+  const { startDate, endDate } = req.query;
+
+  // Validate required date range
+  if (!startDate || !endDate) {
+    return res.status(400).json({
+      success: false,
+      error: 'Both startDate and endDate are required',
+      code: 'INVALID_DATE_RANGE'
+    });
+  }
+
+  // Parse dates
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999); // Include the entire end date
+
+  // Validate date range (max 1 year)
+  const oneYearInMs = 365 * 24 * 60 * 60 * 1000;
+  if (end - start > oneYearInMs) {
+    return res.status(400).json({
+      success: false,
+      error: 'Date range cannot exceed 1 year',
+      code: 'INVALID_DATE_RANGE'
+    });
+  }
+
+  let query = {
+    createdAt: { $gte: start, $lte: end }
+  };
+
+  if (status) query.status = status;
+  if (search) {
+    query.$or = [
+      { orderNumber: { $regex: search, $options: 'i' } },
+      { userName: { $regex: search, $options: 'i' } },
+      { userEmail: { $regex: search, $options: 'i' } }
+    ];
+  }
+
+  const startIndex = (page - 1) * limit;
+  const total = await Order.countDocuments(query);
+  const orders = await Order.find(query)
+    .populate('items.menuItem', 'name price')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .skip(startIndex);
+
+  const totalPages = Math.ceil(total / limit);
+  const hasMore = page < totalPages;
+
+  res.status(200).json({
+    success: true,
+    data: orders,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore
+    }
+  });
+});
+
 // @desc    Get orders for a specific user (Admin)
 // @route   GET /api/admin/users/:userId/orders
 // @access  Private/Admin
@@ -495,5 +608,7 @@ module.exports = {
   deleteOrder,
   getAdminOrders,
   getOrderStats,
+  getRecentAdminOrders,
+  getHistoricalAdminOrders,
   getAdminUserOrders,
 };

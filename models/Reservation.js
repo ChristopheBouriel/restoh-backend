@@ -80,6 +80,10 @@ const ReservationSchema = new mongoose.Schema({
 // Create compound index for date and time to prevent double booking
 ReservationSchema.index({ date: 1, time: 1, tableNumber: 1 }, { unique: true, sparse: true });
 
+// Add indexes for performance on date-based queries
+ReservationSchema.index({ date: -1 });
+ReservationSchema.index({ createdAt: -1 });
+
 // Generate reservation number before saving
 // Format: YYYYMMDD-HHMM-T1-T2-T3
 ReservationSchema.pre('save', function(next) {

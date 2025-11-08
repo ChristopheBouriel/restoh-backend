@@ -8,6 +8,8 @@ const {
   deleteOrder,
   getAdminOrders,
   getOrderStats,
+  getRecentAdminOrders,
+  getHistoricalAdminOrders,
 } = require('../controllers/orderController');
 const { protect, authorize } = require('../middleware/auth');
 
@@ -17,6 +19,8 @@ const router = express.Router();
 router.use(protect);
 
 // Admin routes - MUST be before /:id routes to avoid conflicts
+router.get('/admin/recent', authorize('admin'), getRecentAdminOrders);
+router.get('/admin/history', authorize('admin'), getHistoricalAdminOrders);
 router.get('/admin', authorize('admin'), getAdminOrders);
 router.get('/stats', authorize('admin'), getOrderStats);
 

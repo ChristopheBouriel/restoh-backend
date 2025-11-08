@@ -217,21 +217,23 @@ const getUsersStats = asyncHandler(async (req, res) => {
 });
 
 // @desc    Get all users for admin with advanced filtering
-// @route   GET /api/users/admin/all
+// @route   GET /api/users/admin
 // @access  Private/Admin
 const getAdminUsers = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 10;
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200); // Max 200
   const role = req.query.role;
-  const isActive = req.query.isActive;
+  const status = req.query.status; // 'active' or 'inactive'
   const search = req.query.search;
-  const sortBy = req.query.sortBy || 'createdAt';
-  const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
 
   let query = {};
 
   if (role) query.role = role;
-  if (isActive !== undefined) query.isActive = isActive === 'true';
+
+  // Handle status filter
+  if (status === 'active') query.isActive = true;
+  if (status === 'inactive') query.isActive = false;
+
   if (search) {
     query.$or = [
       { name: { $regex: search, $options: 'i' } },
@@ -244,24 +246,23 @@ const getAdminUsers = asyncHandler(async (req, res) => {
   const total = await User.countDocuments(query);
   const users = await User.find(query)
     .select('-password')
-    .sort({ [sortBy]: sortOrder })
+    .sort({ createdAt: -1 }) // Newest first by default
     .limit(limit)
     .skip(startIndex);
 
-  const pagination = {};
-  if (startIndex + limit < total) {
-    pagination.next = { page: page + 1, limit };
-  }
-  if (startIndex > 0) {
-    pagination.prev = { page: page - 1, limit };
-  }
+  const totalPages = Math.ceil(total / limit);
+  const hasMore = page < totalPages;
 
   res.status(200).json({
     success: true,
-    count: users.length,
-    total,
-    pagination,
     data: users,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasMore
+    }
   });
 });
 
