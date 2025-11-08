@@ -361,7 +361,7 @@ const getTableAvailability = async (date) => {
   return tables.map(table => {
     const booking = getTableBookingsForDate(table, date);
     const bookedSlots = booking ? booking.bookedSlots : [];
-    const availableSlots = [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(slot =>
+    const availableSlots = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].filter(slot =>
       isTableSlotAvailable(table, date, slot)
     );
 

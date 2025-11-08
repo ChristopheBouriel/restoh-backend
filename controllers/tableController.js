@@ -60,8 +60,8 @@ const getAvailableTables = asyncHandler(async (req, res) => {
   const slotNumber = parseInt(slot, 10);
   const requiredCapacity = parseInt(capacity, 10);
 
-  if (slotNumber < 1 || slotNumber > 9) {
-    const errorResponse = createInvalidSlotNumberError(slotNumber, 9);
+  if (slotNumber < 1 || slotNumber > 15) {
+    const errorResponse = createInvalidSlotNumberError(slotNumber, 15);
     return res.status(400).json(errorResponse);
   }
 
@@ -135,8 +135,8 @@ const addBookingToTable = asyncHandler(async (req, res) => {
   }
 
   const slotNumber = parseInt(slot, 10);
-  if (slotNumber < 1 || slotNumber > 9) {
-    const errorResponse = createInvalidSlotNumberError(slotNumber, 9);
+  if (slotNumber < 1 || slotNumber > 15) {
+    const errorResponse = createInvalidSlotNumberError(slotNumber, 15);
     return res.status(400).json(errorResponse);
   }
 
@@ -167,8 +167,8 @@ const removeBookingFromTable = asyncHandler(async (req, res) => {
   }
 
   const slotNumber = parseInt(slot, 10);
-  if (slotNumber < 1 || slotNumber > 9) {
-    const errorResponse = createInvalidSlotNumberError(slotNumber, 9);
+  if (slotNumber < 1 || slotNumber > 15) {
+    const errorResponse = createInvalidSlotNumberError(slotNumber, 15);
     return res.status(400).json(errorResponse);
   }
 

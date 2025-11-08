@@ -422,7 +422,7 @@ const createDateAndSlotRequiredError = () => {
       requiredFields: ['date', 'slot'],
       message: 'Both date and time slot are required to find available tables.',
       dateFormat: 'YYYY-MM-DD',
-      slotRange: { min: 1, max: 9 }
+      slotRange: { min: 1, max: 15 }
     }
   };
 };
@@ -433,7 +433,7 @@ const createDateAndSlotRequiredError = () => {
  * @param {number} maxSlot - Maximum allowed slot
  * @returns {Object} Structured error response
  */
-const createInvalidSlotNumberError = (providedSlot = null, maxSlot = 9) => {
+const createInvalidSlotNumberError = (providedSlot = null, maxSlot = 15) => {
   return {
     success: false,
     error: `Slot must be between 1 and ${maxSlot}`,
@@ -442,7 +442,7 @@ const createInvalidSlotNumberError = (providedSlot = null, maxSlot = 9) => {
       field: 'slot',
       providedValue: providedSlot,
       validRange: { min: 1, max: maxSlot },
-      message: 'Time slot must be between 1 and 9.'
+      message: `Time slot must be between 1 and ${maxSlot}.`
     }
   };
 };

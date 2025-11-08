@@ -10,9 +10,9 @@ const tableBookingSchema = new mongoose.Schema({
     default: [],
     validate: {
       validator: function(slots) {
-        return slots.every(slot => slot >= 1 && slot <= 9);
+        return slots.every(slot => slot >= 1 && slot <= 15);
       },
-      message: 'Invalid slot number. Slots must be between 1 and 9.'
+      message: 'Invalid slot number. Slots must be between 1 and 15.'
     }
   }
 }, {
