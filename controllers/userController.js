@@ -105,6 +105,20 @@ const updateUser = asyncHandler(async (req, res) => {
     return res.status(400).json(errorResponse);
   }
 
+  // Prevent admin from deactivating their own account
+  if (req.user.id === req.params.id && req.body.isActive === false) {
+    return res.status(400).json({
+      success: false,
+      error: 'You cannot deactivate your own account',
+      code: 'CANNOT_DEACTIVATE_OWN_ACCOUNT',
+      details: {
+        userId: req.params.id,
+        message: 'Admins cannot deactivate their own account for security reasons.',
+        suggestion: 'Ask another administrator to deactivate your account if needed.'
+      }
+    });
+  }
+
   const fieldsToUpdate = {
     role: req.body.role,
     isActive: req.body.isActive,
