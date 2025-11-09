@@ -119,6 +119,22 @@ const updateUser = asyncHandler(async (req, res) => {
     });
   }
 
+  // Prevent admin from changing their own role
+  if (req.user.id === req.params.id && req.body.role && req.body.role !== existingUser.role) {
+    return res.status(400).json({
+      success: false,
+      error: 'You cannot modify your own role',
+      code: 'CANNOT_MODIFY_OWN_ROLE',
+      details: {
+        userId: req.params.id,
+        currentRole: existingUser.role,
+        attemptedRole: req.body.role,
+        message: 'Admins cannot modify their own role for security reasons.',
+        suggestion: 'Ask another administrator to change your role if needed.'
+      }
+    });
+  }
+
   const fieldsToUpdate = {
     role: req.body.role,
     isActive: req.body.isActive,
