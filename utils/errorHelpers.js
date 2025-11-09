@@ -629,7 +629,7 @@ const createOrderEmptyItemsError = () => {
  * @param {Array<string>} validTypes - Valid order types
  * @returns {Object} Structured error response
  */
-const createOrderInvalidTypeError = (providedType, validTypes = ['dine-in', 'takeaway', 'delivery']) => {
+const createOrderInvalidTypeError = (providedType, validTypes = ['pickup', 'delivery']) => {
   return {
     success: false,
     error: `Invalid order type: ${providedType}`,
