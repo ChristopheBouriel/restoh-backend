@@ -42,9 +42,12 @@ const createOrder = asyncHandler(async (req, res) => {
     return res.status(400).json(errorResponse);
   }
 
-  if (orderType === 'delivery' && !deliveryAddress) {
-    const errorResponse = createOrderMissingDeliveryAddressError();
-    return res.status(400).json(errorResponse);
+  if (orderType === 'delivery') {
+    // Validate that deliveryAddress exists and has required fields
+    if (!deliveryAddress || !deliveryAddress.street || !deliveryAddress.city || !deliveryAddress.zipCode) {
+      const errorResponse = createOrderMissingDeliveryAddressError();
+      return res.status(400).json(errorResponse);
+    }
   }
 
   // Calculate totals from provided data or items

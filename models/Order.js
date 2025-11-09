@@ -81,8 +81,23 @@ const OrderSchema = new mongoose.Schema({
     required: [true, 'Please specify payment method'],
   },
   deliveryAddress: {
-    type: String,
-    default: null,
+    street: {
+      type: String,
+      default: null,
+    },
+    city: {
+      type: String,
+      default: null,
+    },
+    zipCode: {
+      type: String,
+      default: null,
+    },
+    instructions: {
+      type: String,
+      maxlength: [200, 'Delivery instructions cannot exceed 200 characters'],
+      default: null,
+    }
   },
   notes: {
     type: String,
