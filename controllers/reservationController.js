@@ -241,7 +241,7 @@ const getAdminReservations = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get recent reservations (last 30 days) for admin
+// @desc    Get recent reservations (last 15 days) for admin
 // @route   GET /api/reservations/admin/recent
 // @access  Private/Admin
 const getRecentAdminReservations = asyncHandler(async (req, res) => {
@@ -251,7 +251,7 @@ const getRecentAdminReservations = asyncHandler(async (req, res) => {
 
   // Calculate date 30 days ago
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 15);
 
   let query = {
     $or: [
@@ -286,7 +286,7 @@ const getRecentAdminReservations = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get historical reservations (> 30 days) for admin
+// @desc    Get historical reservations (> 15 days) for admin
 // @route   GET /api/reservations/admin/history
 // @access  Private/Admin
 const getHistoricalAdminReservations = asyncHandler(async (req, res) => {

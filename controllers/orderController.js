@@ -430,7 +430,7 @@ const getOrderStats = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get recent orders (last 30 days) for admin
+// @desc    Get recent orders (last 15 days) for admin
 // @route   GET /api/orders/admin/recent
 // @access  Private/Admin
 const getRecentAdminOrders = asyncHandler(async (req, res) => {
@@ -438,9 +438,9 @@ const getRecentAdminOrders = asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100); // Max 100
   const status = req.query.status;
 
-  // Calculate date 30 days ago
+  // Calculate date 15 days ago
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 15);
 
   let query = {
     createdAt: { $gte: thirtyDaysAgo }
@@ -472,7 +472,7 @@ const getRecentAdminOrders = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get historical orders (> 30 days) for admin
+// @desc    Get historical orders (> 15 days) for admin
 // @route   GET /api/orders/admin/history
 // @access  Private/Admin
 const getHistoricalAdminOrders = asyncHandler(async (req, res) => {
