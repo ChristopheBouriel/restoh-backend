@@ -352,23 +352,6 @@ const createCannotDeleteOwnAccountError = () => {
   };
 };
 
-/**
- * Create an admin invalid credentials error
- * @returns {Object} Structured error response
- */
-const createAdminInvalidCredentialsError = () => {
-  return {
-    success: false,
-    error: 'Invalid admin credentials',
-    code: ERROR_CODES.ADMIN_INVALID_CREDENTIALS,
-    details: {
-      message: 'Invalid email or password for admin login.',
-      suggestion: 'Please check your admin credentials and try again.',
-      field: 'email'
-    }
-  };
-};
-
 // ========================================
 // TABLE ERRORS
 // ========================================
@@ -851,7 +834,6 @@ module.exports = {
   createUserAlreadyDeletedError,
   createCannotModifyDeletedAccountError,
   createCannotDeleteOwnAccountError,
-  createAdminInvalidCredentialsError,
 
   // Tables
   createTableNotFoundError,

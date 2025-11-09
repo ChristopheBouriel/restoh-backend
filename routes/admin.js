@@ -1,6 +1,5 @@
 const express = require('express');
 const {
-  adminLogin,
   getDashboardStats,
 } = require('../controllers/adminController');
 const { getAdminUserOrders } = require('../controllers/orderController');
@@ -9,10 +8,7 @@ const { protect, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Public admin routes
-router.post('/login', adminLogin);
-
-// Protected admin routes
+// All admin routes are protected
 router.use(protect);
 router.use(authorize('admin'));
 
