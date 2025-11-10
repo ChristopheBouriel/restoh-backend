@@ -51,6 +51,11 @@ const ContactSchema = new mongoose.Schema({
       required: [true, 'Author name is required'],
       trim: true,
       maxlength: [100, 'Author name cannot be more than 100 characters']
+    },
+    status: {
+      type: String,
+      enum: ['new', 'read'],
+      default: 'new'
     }
   }]
 }, {

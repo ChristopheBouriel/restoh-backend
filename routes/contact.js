@@ -5,6 +5,7 @@ const {
   getContactMessages,
   updateContactMessageStatus,
   addReplyToDiscussion,
+  markDiscussionMessageAsRead,
   deleteContactMessage,
 } = require('../controllers/contactController');
 const { protect, authorize } = require('../middleware/auth');
@@ -17,6 +18,7 @@ router.post('/', submitContactForm);
 // Protected routes - authenticated users
 router.get('/my-messages', protect, getUserContactMessages);
 router.patch('/:id/reply', protect, addReplyToDiscussion);
+router.patch('/:id/discussion/:discussionId/status', protect, markDiscussionMessageAsRead);
 
 // Admin routes - require authentication and admin role
 router.get('/admin/messages', protect, authorize('admin'), getContactMessages);

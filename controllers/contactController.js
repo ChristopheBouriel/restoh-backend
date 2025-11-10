@@ -188,17 +188,113 @@ const addReplyToDiscussion = asyncHandler(async (req, res) => {
   const reply = {
     text: text.trim(),
     date: new Date(),
-    from: req.user.name
+    from: req.user.name,
+    status: 'new'
   };
 
   message.discussion.push(reply);
+
+  // Update status based on who is replying
+  if (req.user.role === 'admin') {
+    // Admin replied
+    message.status = 'replied';
+  } else {
+    // User replied - notify admin
+    message.status = 'newlyReplied';
+  }
+
   await message.save();
 
   res.status(200).json({
     success: true,
     message: 'Reply added successfully',
     data: {
-      discussion: message.discussion
+      discussion: message.discussion,
+      status: message.status
+    }
+  });
+});
+
+// @desc    Mark discussion message as read
+// @route   PATCH /api/contact/:id/discussion/:discussionId/status
+// @access  Private (user can mark admin messages, admin can mark user messages)
+const markDiscussionMessageAsRead = asyncHandler(async (req, res) => {
+  const { status } = req.body;
+
+  // Validate status
+  if (status !== 'read') {
+    return res.status(400).json({
+      success: false,
+      error: 'Status must be "read"',
+      code: 'VALIDATION_ERROR'
+    });
+  }
+
+  // Find the contact message
+  const message = await Contact.findById(req.params.id);
+
+  if (!message) {
+    const errorResponse = createContactMessageNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
+  }
+
+  // Check permissions: user can only access their own message, admin can access any
+  if (req.user.role !== 'admin' && message.email !== req.user.email) {
+    return res.status(403).json({
+      success: false,
+      error: 'You can only access your own contact messages',
+      code: 'FORBIDDEN'
+    });
+  }
+
+  // Find the discussion message
+  const discussionMessage = message.discussion.id(req.params.discussionId);
+
+
+  if (!discussionMessage) {
+    return res.status(404).json({
+      success: false,
+      error: 'Discussion message not found',
+      code: 'NOT_FOUND'
+    });
+  }
+
+  // Permission check: user can only mark admin messages, admin can only mark user messages
+  const isAdminMessage = discussionMessage.from == 'Admin User';
+
+  if (req.user.role === 'admin' && isAdminMessage) {
+    return res.status(403).json({
+      success: false,
+      error: 'Admin can only mark user messages as read',
+      code: 'FORBIDDEN'
+    });
+  }
+
+  if (req.user.role !== 'admin' && !isAdminMessage) {
+    return res.status(403).json({
+      success: false,
+      error: 'User can only mark admin messages as read',
+      code: 'FORBIDDEN'
+    });
+  }
+
+  // Mark discussion message as read
+  discussionMessage.status = 'read';
+
+  // If admin is marking a message as read AND contact status is 'newlyReplied'
+  // Then change contact status to 'read'
+  if (req.user.role === 'admin' && message.status === 'newlyReplied') {
+    message.status = 'read';
+  }
+
+  await message.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Discussion message marked as read',
+    data: {
+      discussionMessage,
+      contactStatus: message.status
     }
   });
 });
@@ -228,5 +324,6 @@ module.exports = {
   getContactMessages,
   updateContactMessageStatus,
   addReplyToDiscussion,
+  markDiscussionMessageAsRead,
   deleteContactMessage,
 };
