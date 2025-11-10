@@ -771,7 +771,7 @@ const createContactMessageNotFoundError = (messageId = null) => {
  * @param {Array<string>} validStatuses - Valid contact statuses
  * @returns {Object} Structured error response
  */
-const createInvalidContactStatusError = (providedStatus = null, validStatuses = ['new', 'read', 'replied', 'resolved']) => {
+const createInvalidContactStatusError = (providedStatus = null, validStatuses = ['new', 'read', 'replied', 'newlyReplied', 'closed']) => {
   return {
     success: false,
     error: 'Invalid status',

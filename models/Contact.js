@@ -33,9 +33,26 @@ const ContactSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['new', 'read', 'replied', 'resolved'],
+    enum: ['new', 'read', 'replied', 'newlyReplied', 'closed'],
     default: 'new'
-  }
+  },
+  discussion: [{
+    text: {
+      type: String,
+      required: [true, 'Message text is required'],
+      maxlength: [1000, 'Message cannot be more than 1000 characters']
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    from: {
+      type: String,
+      required: [true, 'Author name is required'],
+      trim: true,
+      maxlength: [100, 'Author name cannot be more than 100 characters']
+    }
+  }]
 }, {
   timestamps: true
 });

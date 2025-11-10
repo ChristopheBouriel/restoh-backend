@@ -53,6 +53,20 @@ const submitContactForm = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get user's own contact messages
+// @route   GET /api/contact/my-messages
+// @access  Private
+const getUserContactMessages = asyncHandler(async (req, res) => {
+  const messages = await Contact.find({ email: req.user.email })
+    .sort({ createdAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    count: messages.length,
+    data: messages,
+  });
+});
+
 // @desc    Get all contact messages (Admin only)
 // @route   GET /api/contact/admin/messages
 // @access  Private/Admin
@@ -113,7 +127,7 @@ const updateContactMessageStatus = asyncHandler(async (req, res) => {
   }
 
   // Validate status
-  const validStatuses = ['new', 'read', 'replied', 'resolved'];
+  const validStatuses = ['new', 'read', 'replied', 'newlyReplied', 'closed'];
   if (!validStatuses.includes(status)) {
     const errorResponse = createInvalidContactStatusError(status, validStatuses);
     return res.status(400).json(errorResponse);
@@ -127,6 +141,65 @@ const updateContactMessageStatus = asyncHandler(async (req, res) => {
     success: true,
     message: 'Contact message status updated successfully',
     data: message,
+  });
+});
+
+// @desc    Add reply to contact message discussion
+// @route   PATCH /api/contact/:id/reply
+// @access  Private (user can only reply to their own message, admin can reply to any)
+const addReplyToDiscussion = asyncHandler(async (req, res) => {
+  const { text } = req.body;
+
+  // Validate input
+  if (!text || text.trim().length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: 'Reply text is required',
+      code: 'VALIDATION_ERROR'
+    });
+  }
+
+  if (text.length > 1000) {
+    return res.status(400).json({
+      success: false,
+      error: 'Reply text cannot exceed 1000 characters',
+      code: 'VALIDATION_ERROR'
+    });
+  }
+
+  // Find the contact message
+  const message = await Contact.findById(req.params.id);
+
+  if (!message) {
+    const errorResponse = createContactMessageNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
+  }
+
+  // Check permissions: user can only reply to their own message, admin can reply to any
+  if (req.user.role !== 'admin' && message.email !== req.user.email) {
+    return res.status(403).json({
+      success: false,
+      error: 'You can only reply to your own contact messages',
+      code: 'FORBIDDEN'
+    });
+  }
+
+  // Add reply to discussion
+  const reply = {
+    text: text.trim(),
+    date: new Date(),
+    from: req.user.name
+  };
+
+  message.discussion.push(reply);
+  await message.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Reply added successfully',
+    data: {
+      discussion: message.discussion
+    }
   });
 });
 
@@ -151,7 +224,9 @@ const deleteContactMessage = asyncHandler(async (req, res) => {
 
 module.exports = {
   submitContactForm,
+  getUserContactMessages,
   getContactMessages,
   updateContactMessageStatus,
+  addReplyToDiscussion,
   deleteContactMessage,
 };
