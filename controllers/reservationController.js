@@ -249,14 +249,14 @@ const getRecentAdminReservations = asyncHandler(async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 100); // Max 100
   const status = req.query.status;
 
-  // Calculate date 30 days ago
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 15);
+  // Calculate date 15 days ago
+  const fifteenDaysAgo = new Date();
+  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
   let query = {
     $or: [
-      { date: { $gte: thirtyDaysAgo } },
-      { createdAt: { $gte: thirtyDaysAgo } }
+      { date: { $gte: fifteenDaysAgo } },
+      { createdAt: { $gte: fifteenDaysAgo } }
     ]
   };
 

@@ -99,7 +99,7 @@ const getContactMessages = asyncHandler(async (req, res) => {
 });
 
 // @desc    Update contact message status (Admin only)
-// @route   PUT /api/contact/admin/messages/:id
+// @route   PATCH /api/contact/admin/messages/:id/status
 // @access  Private/Admin
 const updateContactMessageStatus = asyncHandler(async (req, res) => {
   const { status } = req.body;

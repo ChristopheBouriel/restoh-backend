@@ -442,11 +442,11 @@ const getRecentAdminOrders = asyncHandler(async (req, res) => {
   const status = req.query.status;
 
   // Calculate date 15 days ago
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 15);
+  const fifteenDaysAgo = new Date();
+  fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
   let query = {
-    createdAt: { $gte: thirtyDaysAgo }
+    createdAt: { $gte: fifteenDaysAgo }
   };
 
   if (status) query.status = status;

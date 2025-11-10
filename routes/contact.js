@@ -17,7 +17,7 @@ router.use(protect);
 router.use(authorize('admin'));
 
 router.get('/admin/messages', getContactMessages);
-router.put('/admin/messages/:id', updateContactMessageStatus);
+router.patch('/admin/messages/:id/status', updateContactMessageStatus);
 router.delete('/admin/messages/:id', deleteContactMessage);
 
 module.exports = router;
