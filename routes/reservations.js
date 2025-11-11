@@ -2,7 +2,6 @@ const express = require('express');
 const {
   createReservation,
   getUserReservations,
-  getAdminReservations,
   getRecentAdminReservations,
   getHistoricalAdminReservations,
   updateAdminReservation,
@@ -28,7 +27,6 @@ router.delete('/:id', cancelUserReservation);
 router.get('/admin/recent', authorize('admin'), getRecentAdminReservations);
 router.get('/admin/history', authorize('admin'), getHistoricalAdminReservations);
 router.get('/admin/stats', authorize('admin'), getReservationStats);
-router.get('/admin', authorize('admin'), getAdminReservations);
 router.patch('/admin/:id/status', authorize('admin'), updateReservationStatus);
 router.put('/admin/:id', authorize('admin'), updateAdminReservation);
 

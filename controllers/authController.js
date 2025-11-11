@@ -282,6 +282,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
       $set: {
         userName: null,
         userEmail: deletedEmail,
+        contactPhone: null,
       }
     }
   );

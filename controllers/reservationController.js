@@ -188,59 +188,6 @@ const getUserReservations = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get all reservations for admin
-// @route   GET /api/reservations/admin/all
-// @access  Private/Admin
-const getAdminReservations = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 10;
-  const status = req.query.status;
-  const date = req.query.date;
-  const search = req.query.search;
-
-  let query = {};
-
-  if (status) query.status = status;
-  if (date) {
-    const startDate = new Date(date);
-    const endDate = new Date(date);
-    endDate.setDate(endDate.getDate() + 1);
-    query.date = { $gte: startDate, $lt: endDate };
-  }
-  if (search) {
-    query.$or = [
-      { userName: { $regex: search, $options: 'i' } },
-      { userEmail: { $regex: search, $options: 'i' } },
-      { contactPhone: { $regex: search, $options: 'i' } },
-      { tableNumber: { $regex: search, $options: 'i' } },
-    ];
-  }
-
-  const startIndex = (page - 1) * limit;
-  const total = await Reservation.countDocuments(query);
-  const reservations = await Reservation.find(query)
-    .populate('userId', 'name email phone')
-    .sort({ date: 1, slot: 1 })
-    .limit(limit)
-    .skip(startIndex);
-
-  const pagination = {};
-  if (startIndex + limit < total) {
-    pagination.next = { page: page + 1, limit };
-  }
-  if (startIndex > 0) {
-    pagination.prev = { page: page - 1, limit };
-  }
-
-  res.status(200).json({
-    success: true,
-    count: reservations.length,
-    total,
-    pagination,
-    data: reservations,
-  });
-});
-
 // @desc    Get recent reservations (last 15 days) for admin
 // @route   GET /api/reservations/admin/recent
 // @access  Private/Admin
@@ -889,7 +836,6 @@ const getAdminUserReservations = asyncHandler(async (req, res) => {
 module.exports = {
   createReservation,
   getUserReservations,
-  getAdminReservations,
   getRecentAdminReservations,
   getHistoricalAdminReservations,
   updateAdminReservation,
