@@ -45,6 +45,39 @@ const protect = async (req, res, next) => {
   }
 };
 
+// Optional authentication - sets req.user if token exists but doesn't block if missing
+const optionalAuth = async (req, res, next) => {
+  let token;
+
+  // Check for token in cookies first
+  if (req.cookies.token) {
+    token = req.cookies.token;
+  }
+  // Fallback to authorization header
+  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  // If no token or token is 'none', just continue without setting req.user
+  if (!token || token === 'none') {
+    return next();
+  }
+
+  try {
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Get user from MongoDB
+    req.user = await User.findById(decoded.id).select('-password');
+
+    // Continue even if user not found (just without req.user)
+    next();
+  } catch (error) {
+    // Continue even if token is invalid (just without req.user)
+    next();
+  }
+};
+
 // Grant access to specific roles
 const authorize = (...roles) => {
   return (req, res, next) => {
@@ -58,4 +91,4 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, authorize };
+module.exports = { protect, optionalAuth, authorize };

@@ -26,14 +26,21 @@ const submitContactForm = asyncHandler(async (req, res) => {
   const { name, email, phone, subject, message } = req.body;
 
   // Create contact message in MongoDB
-  const contactMessage = await Contact.create({
+  const contactData = {
     name,
     email,
     phone,
     subject,
     message,
     status: 'new'
-  });
+  };
+
+  // If user is authenticated, add userId
+  if (req.user) {
+    contactData.userId = req.user._id;
+  }
+
+  const contactMessage = await Contact.create(contactData);
 
   // TODO: In production, implement:
   // 1. Send email notification to admin

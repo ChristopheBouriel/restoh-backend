@@ -8,12 +8,12 @@ const {
   markDiscussionMessageAsRead,
   deleteContactMessage,
 } = require('../controllers/contactController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, optionalAuth, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Public route - anyone can submit contact form
-router.post('/', submitContactForm);
+// Public route - anyone can submit contact form (optionalAuth captures userId if authenticated)
+router.post('/', optionalAuth, submitContactForm);
 
 // Protected routes - authenticated users
 router.get('/my-messages', protect, getUserContactMessages);
