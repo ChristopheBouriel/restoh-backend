@@ -82,17 +82,23 @@ const validateOrder = (data) => {
 };
 
 // Contact form validation
-const validateContact = (data) => {
-  const schema = Joi.object({
+const contactSchema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
     phone: Joi.string().pattern(/^[+]?[0-9\s\-()]{10,15}$/).allow(null).optional(),
     subject: Joi.string().min(5).max(200).required(),
     message: Joi.string().min(10).max(1000).required(),
-  });
+    status: Joi.string().valid('new', 'read', 'replied', 'newlyReplied', 'closed').optional()
+});
 
-  return schema.validate(data);
-};
+
+// Discussion reply validation
+const DiscussionSchema = Joi.object({
+    text: Joi.string().min(1).max(1000).required(),
+    from: Joi.string().min(2).max(100).allow(null).optional(),
+    date: Joi.date().allow(null).optional(),
+    status: Joi.string().valid('new', 'read').allow(null).optional()
+});
 
 module.exports = {
   validateRegister,
@@ -100,5 +106,6 @@ module.exports = {
   menuSchema,
   validateReservation,
   validateOrder,
-  validateContact,
+  contactSchema,
+  DiscussionSchema,
 };

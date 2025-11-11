@@ -143,7 +143,6 @@ const updateMenuItem = asyncHandler(async (req, res) => {
       if (error) {
         errors.push(error.details[0].message);
       }
-
     }
 
     if(errors.length) {

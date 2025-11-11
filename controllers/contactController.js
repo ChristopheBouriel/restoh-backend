@@ -1,9 +1,11 @@
 const Contact = require('../models/Contact');
 const asyncHandler = require('../utils/asyncHandler');
-const { validateContact } = require('../utils/validation');
+const {
+  contactSchema,
+  DiscussionSchema
+} = require('../utils/validation');
 const {
   createContactMessageNotFoundError,
-  createInvalidContactStatusError,
   createValidationError
 } = require('../utils/errorHelpers');
 
@@ -116,6 +118,17 @@ const getContactMessages = asyncHandler(async (req, res) => {
 // @route   PATCH /api/contact/admin/messages/:id/status
 // @access  Private/Admin
 const updateContactMessageStatus = asyncHandler(async (req, res) => {
+  // Validate input
+  const { error } = contactSchema.extract('status').validate(req.body.status);
+
+  if (error) {
+    const errorResponse = createValidationError(error.details[0].message, {
+      field: 'status',
+      message: error.details[0].message
+    });
+    return res.status(400).json(errorResponse);
+  }
+
   const { status } = req.body;
 
   // Find the contact message
@@ -124,13 +137,6 @@ const updateContactMessageStatus = asyncHandler(async (req, res) => {
   if (!message) {
     const errorResponse = createContactMessageNotFoundError(req.params.id);
     return res.status(404).json(errorResponse);
-  }
-
-  // Validate status
-  const validStatuses = ['new', 'read', 'replied', 'newlyReplied', 'closed'];
-  if (!validStatuses.includes(status)) {
-    const errorResponse = createInvalidContactStatusError(status, validStatuses);
-    return res.status(400).json(errorResponse);
   }
 
   // Update status
@@ -148,24 +154,17 @@ const updateContactMessageStatus = asyncHandler(async (req, res) => {
 // @route   PATCH /api/contact/:id/reply
 // @access  Private (user can only reply to their own message, admin can reply to any)
 const addReplyToDiscussion = asyncHandler(async (req, res) => {
-  const { text } = req.body;
-
   // Validate input
-  if (!text || text.trim().length === 0) {
-    return res.status(400).json({
-      success: false,
-      error: 'Reply text is required',
-      code: 'VALIDATION_ERROR'
+  const { error } = DiscussionSchema.validate(req.body);
+  if (error) {
+    const errorResponse = createValidationError(error.details[0].message, {
+      field: error.details[0].path.join('.'),
+      message: error.details[0].message
     });
+    return res.status(400).json(errorResponse);
   }
 
-  if (text.length > 1000) {
-    return res.status(400).json({
-      success: false,
-      error: 'Reply text cannot exceed 1000 characters',
-      code: 'VALIDATION_ERROR'
-    });
-  }
+  const { text } = req.body;
 
   // Find the contact message
   const message = await Contact.findById(req.params.id);
@@ -219,15 +218,14 @@ const addReplyToDiscussion = asyncHandler(async (req, res) => {
 // @route   PATCH /api/contact/:id/discussion/:discussionId/status
 // @access  Private (user can mark admin messages, admin can mark user messages)
 const markDiscussionMessageAsRead = asyncHandler(async (req, res) => {
-  const { status } = req.body;
-
-  // Validate status
-  if (status !== 'read') {
-    return res.status(400).json({
-      success: false,
-      error: 'Status must be "read"',
-      code: 'VALIDATION_ERROR'
+  // Validate input
+  const { error } = DiscussionSchema.extract('status').validate(req.body.status);
+  if (error) {
+    const errorResponse = createValidationError(error.details[0].message, {
+      field: 'status',
+      message: error.details[0].message
     });
+    return res.status(400).json(errorResponse);
   }
 
   // Find the contact message

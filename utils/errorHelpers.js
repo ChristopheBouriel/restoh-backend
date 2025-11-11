@@ -765,26 +765,6 @@ const createContactMessageNotFoundError = (messageId = null) => {
   };
 };
 
-/**
- * Create an invalid contact status error
- * @param {string} providedStatus - The invalid status provided
- * @param {Array<string>} validStatuses - Valid contact statuses
- * @returns {Object} Structured error response
- */
-const createInvalidContactStatusError = (providedStatus = null, validStatuses = ['new', 'read', 'replied', 'newlyReplied', 'closed']) => {
-  return {
-    success: false,
-    error: 'Invalid status',
-    code: ERROR_CODES.INVALID_CONTACT_STATUS,
-    details: {
-      field: 'status',
-      providedValue: providedStatus,
-      validValues: validStatuses,
-      message: `Status must be one of: ${validStatuses.join(', ')}.`
-    }
-  };
-};
-
 // ========================================
 // GENERIC ERRORS
 // ========================================
@@ -874,7 +854,6 @@ module.exports = {
 
   // Contact
   createContactMessageNotFoundError,
-  createInvalidContactStatusError,
 
   // Generic
   createValidationError,
