@@ -94,8 +94,10 @@ const contactSchema = Joi.object({
 
 // Discussion reply validation
 const DiscussionSchema = Joi.object({
+    userId: Joi.string().allow(null).optional(),
+    name: Joi.string().min(2).max(100).allow(null).optional(),
+    role: Joi.string().valid('admin', 'user').allow(null).optional(),
     text: Joi.string().min(1).max(1000).required(),
-    from: Joi.string().min(2).max(100).allow(null).optional(),
     date: Joi.date().allow(null).optional(),
     status: Joi.string().valid('new', 'read').allow(null).optional()
 });

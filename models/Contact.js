@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const ContactSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    default: null
+  },
   name: {
     type: String,
     required: [true, 'Please provide your name'],
@@ -37,6 +42,22 @@ const ContactSchema = new mongoose.Schema({
     default: 'new'
   },
   discussion: [{
+    userId: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User',
+      required: [true, 'User ID is required for discussion messages']
+    },
+    name: {
+      type: String,
+      required: [true, 'Author name is required'],
+      trim: true,
+      maxlength: [100, 'Author name cannot be more than 100 characters']
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'user'],
+      required: [true, 'User role is required']
+    },
     text: {
       type: String,
       required: [true, 'Message text is required'],
@@ -45,12 +66,6 @@ const ContactSchema = new mongoose.Schema({
     date: {
       type: Date,
       default: Date.now
-    },
-    from: {
-      type: String,
-      required: [true, 'Author name is required'],
-      trim: true,
-      maxlength: [100, 'Author name cannot be more than 100 characters']
     },
     status: {
       type: String,

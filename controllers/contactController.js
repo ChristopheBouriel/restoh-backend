@@ -14,7 +14,7 @@ const {
 // @access  Public
 const submitContactForm = asyncHandler(async (req, res) => {
   // Validate input
-  const { error } = validateContact(req.body);
+  const { error } = contactSchema.validate(req.body);
   if (error) {
     const errorResponse = createValidationError(error.details[0].message, {
       field: error.details[0].path.join('.'),
@@ -185,9 +185,11 @@ const addReplyToDiscussion = asyncHandler(async (req, res) => {
 
   // Add reply to discussion
   const reply = {
+    userId: req.user._id,
+    name: req.user.name,
+    role: req.user.role,
     text: text.trim(),
     date: new Date(),
-    from: req.user.name,
     status: 'new'
   };
 
@@ -258,7 +260,7 @@ const markDiscussionMessageAsRead = asyncHandler(async (req, res) => {
   }
 
   // Permission check: user can only mark admin messages, admin can only mark user messages
-  const isAdminMessage = discussionMessage.from == 'Admin User';
+  const isAdminMessage = discussionMessage.role === 'admin';
 
   if (req.user.role === 'admin' && isAdminMessage) {
     return res.status(403).json({
