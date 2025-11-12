@@ -257,9 +257,10 @@ const deleteAccount = asyncHandler(async (req, res) => {
     });
   }
 
-  // Import models for orders and reservations
+  // Import models for orders, reservations and contacts
   const Order = require('../models/Order');
   const Reservation = require('../models/Reservation');
+  const Contact = require('../models/Contact');
 
   // Generate unique deleted email using user ID to avoid duplicate key errors
   const deletedEmail = `deleted-${req.user._id}@account.com`;
@@ -284,6 +285,31 @@ const deleteAccount = asyncHandler(async (req, res) => {
         userEmail: deletedEmail,
         contactPhone: null,
       }
+    }
+  );
+
+  // Anonymize user data in all contacts (main contact info)
+  await Contact.updateMany(
+    { userId: req.user._id },
+    {
+      $set: {
+        name: null,
+        email: deletedEmail,
+        phone: null,
+      }
+    }
+  );
+
+  // Anonymize user data in discussion messages (where user is the author)
+  await Contact.updateMany(
+    { 'discussion.userId': req.user._id },
+    {
+      $set: {
+        'discussion.$[elem].name': null,
+      }
+    },
+    {
+      arrayFilters: [{ 'elem.userId': req.user._id }]
     }
   );
 
