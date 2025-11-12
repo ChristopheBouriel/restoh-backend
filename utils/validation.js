@@ -62,6 +62,7 @@ const validateOrder = (data) => {
     userId: Joi.string().required(),
     userEmail: Joi.string().email().required(),
     userName: Joi.string().required(),
+    phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
     items: Joi.array().items(
       Joi.object({
         menuItem: Joi.string().required(),

@@ -14,6 +14,10 @@ const OrderSchema = new mongoose.Schema({
     type: String,
     required: [true, 'User must have a name'],
   },
+  phone: {
+    type: String,
+    required: [true, 'User must have a phone number'],
+  },
   orderNumber: {
     type: String,
     unique: true,
