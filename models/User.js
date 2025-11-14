@@ -53,6 +53,16 @@ const UserSchema = new mongoose.Schema({
       default: null,
     },
   },
+  notifications: {
+    newsletter: {
+      type: Boolean,
+      default: true,
+    },
+    promotions: {
+      type: Boolean,
+      default: true,
+    },
+  },
   totalOrders: {
     type: Number,
     default: 0,

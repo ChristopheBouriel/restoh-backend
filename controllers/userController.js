@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Reservation = require('../models/Reservation');
 const asyncHandler = require('../utils/asyncHandler');
+const { validateAdminUserUpdate } = require('../utils/validation');
 const {
   createUserNotFoundError,
   createUserAlreadyDeletedError,
@@ -90,6 +91,15 @@ const getUser = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const updateUser = asyncHandler(async (req, res) => {
   console.log(req.body)
+
+  // Validate input
+  const { error } = validateAdminUserUpdate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
+  }
 
   // Check if user exists first
   const existingUser = await User.findById(req.params.id);
@@ -206,10 +216,10 @@ const getUsersStats = asyncHandler(async (req, res) => {
   });
 
   // Users who logged in in the last 30 days
-  const sevenDaysAgo = new Date();
-  thirtyDaysAgo.setDate(sevenDaysAgo.getDate() - 30);
+  const thirtyDaysAgoForLogin = new Date();
+  thirtyDaysAgoForLogin.setDate(thirtyDaysAgoForLogin.getDate() - 30);
   const recentlyLoggedUsers = await User.countDocuments({
-    lastLogin: { $gte: thirtyDaysAgo },
+    lastLogin: { $gte: thirtyDaysAgoForLogin },
   });
 
   // Users who ordered or reserved in the last 30 days

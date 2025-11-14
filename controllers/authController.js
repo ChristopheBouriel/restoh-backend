@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
-const { validateRegister, validateLogin } = require('../utils/validation');
+const { validateRegister, validateLogin, validateUserUpdate } = require('../utils/validation');
 const { sendTokenResponse, clearTokenCookie } = require('../utils/authCookies');
 const {
   createInvalidCredentialsError,
@@ -117,6 +117,45 @@ const updateProfileUser = asyncHandler(async (req, res) => {
   console.log('updateProfileUser called with body:', req.body);
   console.log('User ID:', req.user._id);
 
+  // Validate input
+  const { error } = validateUserUpdate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
+  }
+
+  // Handle password change if provided
+  if (req.body.newPassword) {
+    const user = await User.findById(req.user._id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check current password
+    const isMatch = await user.matchPassword(req.body.currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Current password is incorrect',
+      });
+    }
+
+    // Update password
+    user.password = req.body.newPassword;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  }
+
   const fieldsToUpdate = {};
 
   // Only add fields that are provided and not undefined
@@ -139,6 +178,16 @@ const updateProfileUser = asyncHandler(async (req, res) => {
     addressFields.forEach(field => {
       if (req.body.address[field] !== undefined) {
         fieldsToUpdate[`address.${field}`] = req.body.address[field];
+      }
+    });
+  }
+
+  // Handle notifications object - use dot notation to update individual fields
+  if (req.body.notifications && typeof req.body.notifications === 'object') {
+    const notificationFields = ['newsletter', 'promotions'];
+    notificationFields.forEach(field => {
+      if (req.body.notifications[field] !== undefined) {
+        fieldsToUpdate[`notifications.${field}`] = req.body.notifications[field];
       }
     });
   }

@@ -103,6 +103,47 @@ const DiscussionSchema = Joi.object({
     status: Joi.string().valid('new', 'read').allow(null).optional()
 });
 
+// User profile update validation
+const validateUserUpdate = (data) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).max(50).optional(),
+    email: Joi.string().email().optional(),
+    phone: Joi.string().pattern(/^[0-9]{10}$/).allow(null).optional(),
+    address: Joi.object({
+      street: Joi.string().max(100).allow(null).optional(),
+      city: Joi.string().max(50).allow(null).optional(),
+      state: Joi.string().max(50).allow(null).optional(),
+      zipCode: Joi.string().pattern(/^[0-9]{5}$/).allow(null).optional(),
+    }).optional(),
+    notifications: Joi.object({
+      newsletter: Joi.boolean().optional(),
+      promotions: Joi.boolean().optional(),
+    }).optional(),
+    currentPassword: Joi.string().min(6).optional(),
+    newPassword: Joi.string().min(6).optional(),
+  }).custom((value, helpers) => {
+    // If newPassword is provided, currentPassword must also be provided
+    if (value.newPassword && !value.currentPassword) {
+      return helpers.error('any.invalid', {
+        message: 'Current password is required to set a new password'
+      });
+    }
+    return value;
+  });
+
+  return schema.validate(data);
+};
+
+// Admin user update validation (only role and active status)
+const validateAdminUserUpdate = (data) => {
+  const schema = Joi.object({
+    role: Joi.string().valid('user', 'admin').optional(),
+    isActive: Joi.boolean().optional(),
+  });
+
+  return schema.validate(data);
+};
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -111,4 +152,6 @@ module.exports = {
   validateOrder,
   contactSchema,
   DiscussionSchema,
+  validateUserUpdate,
+  validateAdminUserUpdate,
 };
