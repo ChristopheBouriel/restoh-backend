@@ -10,10 +10,14 @@ const initBrevoClient = () => {
     return apiInstance;
   }
 
-  const apiKey = brevo.ApiClient.instance.authentications['api-key'];
-  apiKey.apiKey = process.env.BREVO_API_KEY;
-
+  // Create API instance with API key
   apiInstance = new brevo.TransactionalEmailsApi();
+
+  // Set API key
+  apiInstance.setApiKey(
+    brevo.TransactionalEmailsApiApiKeys.apiKey,
+    process.env.BREVO_API_KEY
+  );
 
   return apiInstance;
 };
