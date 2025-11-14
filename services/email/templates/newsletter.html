@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RestOh Newsletter</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+      color: #ffffff;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .badge {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.2);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .content {
+      padding: 40px 30px;
+      color: #333333;
+      line-height: 1.8;
+    }
+    .content h2 {
+      color: #ff6b35;
+      margin-top: 0;
+    }
+    .footer {
+      background-color: #333333;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .footer a {
+      color: #ff6b35;
+      text-decoration: none;
+    }
+    .unsubscribe {
+      margin-top: 15px;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍽️ RestOh Newsletter</h1>
+      <div class="badge">📬 Monthly Update</div>
+    </div>
+    <div class="content">
+      <h2>Hello {{name}}!</h2>
+      {{content}}
+      <p style="margin-top: 30px;">We hope to see you soon at RestOh!</p>
+      <p>Warm regards,<br>The RestOh Team</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} RestOh Restaurant. All rights reserved.</p>
+      <p>Questions? <a href="mailto:support@restoh.com">Contact Support</a></p>
+      <div class="unsubscribe">
+        <p>You're receiving this because you subscribed to our newsletter.</p>
+        <p><a href="{{unsubscribeUrl}}" style="color: #ff6b35;">Unsubscribe</a> from newsletter emails</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

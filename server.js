@@ -120,6 +120,8 @@ app.get('/api/cors-test', (req, res) => {
 
 // API Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/email', require('./routes/emailRoutes'));
+app.use('/api/newsletter', require('./routes/newsletterRoutes'));
 app.use('/api/menu', require('./routes/menu'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reservations', require('./routes/reservations'));

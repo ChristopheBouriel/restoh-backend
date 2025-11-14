@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Special Offer from RestOh</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background: linear-gradient(135deg, #ff6b35 0%, #f94144 100%);
+      color: #ffffff;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+    .badge {
+      display: inline-block;
+      background-color: #ffd700;
+      color: #333;
+      padding: 8px 20px;
+      border-radius: 25px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 15px;
+    }
+    .content {
+      padding: 40px 30px;
+      color: #333333;
+      line-height: 1.8;
+    }
+    .content h2 {
+      color: #ff6b35;
+      margin-top: 0;
+    }
+    .promo-box {
+      background: linear-gradient(135deg, #fff5f5 0%, #ffe5e5 100%);
+      border-left: 4px solid #ff6b35;
+      padding: 20px;
+      margin: 25px 0;
+      border-radius: 5px;
+    }
+    .button {
+      display: inline-block;
+      padding: 15px 40px;
+      margin: 25px 0;
+      background-color: #ff6b35;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .footer {
+      background-color: #333333;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .footer a {
+      color: #ff6b35;
+      text-decoration: none;
+    }
+    .unsubscribe {
+      margin-top: 15px;
+      font-size: 11px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎉 Special Offer!</h1>
+      <div class="badge">⭐ LIMITED TIME</div>
+    </div>
+    <div class="content">
+      <h2>Exclusive Deal for You, {{name}}!</h2>
+      <div class="promo-box">
+        {{promotionContent}}
+      </div>
+      <div style="text-align: center;">
+        <a href="https://restoh.com/menu" class="button">Order Now</a>
+      </div>
+      <p style="margin-top: 30px; font-size: 14px; color: #666;">
+        * Terms and conditions apply. Offer valid while supplies last. Cannot be combined with other offers.
+      </p>
+      <p>Don't miss out on this amazing deal!</p>
+      <p>Best regards,<br>The RestOh Team</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} RestOh Restaurant. All rights reserved.</p>
+      <p>Questions? <a href="mailto:support@restoh.com">Contact Support</a></p>
+      <div class="unsubscribe">
+        <p>You're receiving this because you opted in for promotional emails.</p>
+        <p><a href="{{unsubscribeUrl}}" style="color: #ff6b35;">Unsubscribe</a> from promotional emails</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

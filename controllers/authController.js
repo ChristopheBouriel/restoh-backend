@@ -1,7 +1,9 @@
 const User = require('../models/User');
+const EmailVerification = require('../models/EmailVerification');
 const asyncHandler = require('../utils/asyncHandler');
 const { validateRegister, validateLogin, validateUserUpdate } = require('../utils/validation');
 const { sendTokenResponse, clearTokenCookie } = require('../utils/authCookies');
+const emailService = require('../services/email/emailService');
 const {
   createInvalidCredentialsError,
   createEmailExistsError,
@@ -39,7 +41,21 @@ const register = asyncHandler(async (req, res) => {
     phone,
   });
 
-  sendTokenResponse(user, 201, res, 'User registered successfully');
+  // Create email verification token
+  const verification = await EmailVerification.createToken(user._id, user.email);
+
+  // Send verification email
+  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verification.token}`;
+
+  try {
+    await emailService.sendVerificationEmail(user.email, user.name, verificationUrl);
+    console.log(`✓ Verification email sent to ${user.email}`);
+  } catch (error) {
+    console.error('✗ Failed to send verification email:', error.message);
+    // Don't fail registration if email fails, user can request resend
+  }
+
+  sendTokenResponse(user, 201, res, 'User registered successfully. Please check your email to verify your account.');
 });
 
 // @desc    Login user

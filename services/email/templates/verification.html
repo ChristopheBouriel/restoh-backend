@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Your Email</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial', sans-serif;
+      background-color: #f4f4f4;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+    }
+    .header {
+      background-color: #ff6b35;
+      color: #ffffff;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+    .content {
+      padding: 40px 30px;
+      color: #333333;
+      line-height: 1.6;
+    }
+    .content h2 {
+      color: #ff6b35;
+      margin-top: 0;
+    }
+    .button {
+      display: inline-block;
+      padding: 15px 40px;
+      margin: 25px 0;
+      background-color: #ff6b35;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .footer {
+      background-color: #333333;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+    }
+    .footer a {
+      color: #ff6b35;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🍽️ RestOh Restaurant</h1>
+    </div>
+    <div class="content">
+      <h2>Welcome, {{name}}!</h2>
+      <p>Thank you for signing up with RestOh Restaurant. We're excited to have you join our community!</p>
+      <p>To complete your registration and start enjoying our services, please verify your email address by clicking the button below:</p>
+      <div style="text-align: center;">
+        <a href="{{verificationUrl}}" class="button">Verify Email Address</a>
+      </div>
+      <p>Or copy and paste this link into your browser:</p>
+      <p style="word-break: break-all; color: #666; font-size: 14px;">{{verificationUrl}}</p>
+      <p><strong>This link will expire in 24 hours.</strong></p>
+      <p>If you didn't create an account with us, please ignore this email.</p>
+      <p>Best regards,<br>The RestOh Team</p>
+    </div>
+    <div class="footer">
+      <p>&copy; {{year}} RestOh Restaurant. All rights reserved.</p>
+      <p>Questions? <a href="mailto:support@restoh.com">Contact Support</a></p>
+    </div>
+  </div>
+</body>
+</html>
