@@ -48,7 +48,8 @@ const OrderSchema = new mongoose.Schema({
     specialInstructions: {
       type: String,
       maxlength: [100, 'Special instructions cannot exceed 100 characters'],
-    },
+      default: null,
+    }, // Not implemented yet
   }],
   totalPrice: {
     type: Number,
@@ -103,13 +104,31 @@ const OrderSchema = new mongoose.Schema({
       default: null,
     }
   },
-  notes: {
+  specialInstructions: {
     type: String,
-    maxlength: [200, 'Notes cannot exceed 200 characters'],
+    maxlength: [200, 'Special instructions cannot exceed 200 characters'],
     default: null,
   },
 }, {
   timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  }
 });
 
 // Generate order number before saving

@@ -78,7 +78,7 @@ const createOrder = asyncHandler(async (req, res) => {
       image: menuItem.image,
       price: menuItem.price,
       quantity: item.quantity,
-      specialInstructions: item.specialInstructions || ''
+      specialInstructions: item.specialInstructions || '' // Not implemented yet
     };
   });
 

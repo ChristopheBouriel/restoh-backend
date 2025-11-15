@@ -68,7 +68,7 @@ const validateOrder = (data) => {
         menuItem: Joi.string().required(),
         quantity: Joi.number().integer().min(1).required(),
         price: Joi.number().positive().required(),
-        specialInstructions: Joi.string().max(100).allow(null).optional(),
+        specialInstructions: Joi.string().max(100).allow(null).optional(), // Not implemented yet
       })
     ).min(1).required(),
     totalPrice: Joi.number().positive().required(),
@@ -76,7 +76,7 @@ const validateOrder = (data) => {
     paymentStatus: Joi.string().valid('pending', 'paid').required(),
     paymentMethod: Joi.string().valid('cash', 'card').required(),
     deliveryAddress: Joi.string().required(),
-    notes: Joi.string().max(200).allow(null).optional(),
+    specialInstructions: Joi.string().max(200).allow(null).optional(),
   });
 
   return schema.validate(data);
