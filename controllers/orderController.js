@@ -50,22 +50,42 @@ const createOrder = asyncHandler(async (req, res) => {
     }
   }
 
-  // Calculate totals from provided data or items
-  let calculatedTotal = totalPrice;
-  if (!calculatedTotal) {
-    calculatedTotal = items.reduce((total, item) => {
-      return total + (item.price * item.quantity);
-    }, 0);
+  // Fetch menu items from database to get accurate data
+  const menuItemIds = items.map(item => item.menuItem || item.id || item._id);
+  const menuItems = await MenuItem.find({ _id: { $in: menuItemIds } });
+
+  // Validate that all menu items exist
+  if (menuItems.length !== items.length) {
+    const errorResponse = createValidationError('One or more menu items not found', {
+      provided: items.length,
+      found: menuItems.length
+    });
+    return res.status(400).json(errorResponse);
   }
 
-  // Prepare order items
-  const orderItems = items.map(item => ({
-    menuItem: item.menuItem || item._id,
-    quantity: item.quantity,
-    price: item.price,
-    name: item.name,
-    image: item.image
-  }));
+  // Prepare order items with data from database
+  const orderItems = items.map(item => {
+    const menuItemId = item.menuItem || item.id || item._id;
+    const menuItem = menuItems.find(mi => mi._id.toString() === menuItemId.toString());
+
+    if (!menuItem) {
+      throw new Error(`Menu item ${menuItemId} not found`);
+    }
+
+    return {
+      menuItem: menuItem._id,
+      name: menuItem.name,
+      image: menuItem.image,
+      price: menuItem.price,
+      quantity: item.quantity,
+      specialInstructions: item.specialInstructions || ''
+    };
+  });
+
+  // Calculate totals from database prices (security: prevent price manipulation)
+  const calculatedTotal = orderItems.reduce((total, item) => {
+    return total + (item.price * item.quantity);
+  }, 0);
 
   // Create order in MongoDB
   const order = await Order.create({
