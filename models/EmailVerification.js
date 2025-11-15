@@ -21,6 +21,10 @@ const EmailVerificationSchema = new mongoose.Schema({
     required: true,
     default: () => new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
   },
+  used: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
@@ -50,7 +54,13 @@ EmailVerificationSchema.statics.createToken = async function(userId, email) {
 
 // Method to verify if token is still valid
 EmailVerificationSchema.methods.isValid = function() {
-  return this.expiresAt > new Date();
+  return !this.used && this.expiresAt > new Date();
+};
+
+// Method to mark token as used (OWASP: one-time use)
+EmailVerificationSchema.methods.markAsUsed = async function() {
+  this.used = true;
+  await this.save();
 };
 
 module.exports = mongoose.model('EmailVerification', EmailVerificationSchema);

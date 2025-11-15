@@ -208,6 +208,10 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   // Update password
   user.password = password;
+
+  // OWASP Security: Set passwordChangedAt to invalidate old JWT tokens
+  user.passwordChangedAt = new Date();
+
   await user.save();
 
   // Mark token as used

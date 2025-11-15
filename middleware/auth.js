@@ -36,6 +36,17 @@ const protect = async (req, res, next) => {
       });
     }
 
+    // OWASP Security: Check if password was changed after token was issued
+    if (req.user.passwordChangedAt) {
+      const tokenIssuedAt = new Date(decoded.iat * 1000);
+      if (req.user.passwordChangedAt > tokenIssuedAt) {
+        return res.status(401).json({
+          success: false,
+          message: 'Password was changed recently. Please log in again.',
+        });
+      }
+    }
+
     next();
   } catch (error) {
     return res.status(401).json({
