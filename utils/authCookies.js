@@ -13,19 +13,16 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
     sameSite: 'strict',
   };
 
+  // Convert Mongoose document to JSON to apply toJSON transform
+  const userJSON = user.toJSON ? user.toJSON() : user;
+
   res
     .status(statusCode)
     .cookie('token', token, options)
     .json({
       success: true,
       message,
-      user: {
-        id: user._id || user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        lastLogin: user.lastLogin,
-      },
+      user: userJSON,
     });
 };
 
