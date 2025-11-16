@@ -36,7 +36,6 @@ const createOrder = asyncHandler(async (req, res) => {
     paymentMethod,
     phone,
     specialInstructions,
-    totalPrice,
     paymentStatus,
   } = req.body;
 
@@ -109,7 +108,6 @@ const createOrder = asyncHandler(async (req, res) => {
     deliveryAddress: orderType === 'delivery' ? deliveryAddress : null,
     specialInstructions: specialInstructions || null,
     phone: phone || req.user.phone,
-    //transactionId: transactionId || null,
   });
 
   console.log('Order created in MongoDB:', order._id);
