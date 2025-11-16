@@ -35,7 +35,7 @@ const sendNewsletter = asyncHandler(async (req, res) => {
     name: user.name,
     variables: {
       content,
-      unsubscribeUrl: `${process.env.FRONTEND_URL}/unsubscribe/newsletter/${user._id}`,
+      unsubscribeUrl: `${process.env.FRONTEND_URL}/unsubscribe/newsletter/${user.id}`,
     },
   }));
 
@@ -87,7 +87,7 @@ const sendPromotion = asyncHandler(async (req, res) => {
     name: user.name,
     variables: {
       promotionContent,
-      unsubscribeUrl: `${process.env.FRONTEND_URL}/unsubscribe/promotions/${user._id}`,
+      unsubscribeUrl: `${process.env.FRONTEND_URL}/unsubscribe/promotions/${user.id}`,
     },
   }));
 

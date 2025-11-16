@@ -56,7 +56,7 @@ const submitContactForm = asyncHandler(async (req, res) => {
     success: true,
     message: 'Thank you for your message! We will get back to you soon.',
     data: {
-      id: contactMessage._id,
+      id: contactMessage.id,
       submittedAt: contactMessage.createdAt,
     },
   });
