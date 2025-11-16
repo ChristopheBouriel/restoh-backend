@@ -56,27 +56,33 @@ const validateReservation = (data) => {
   return schema.validate(data);
 };
 
-// Order validation
-const validateOrder = (data) => {
+// Validate order creation from frontend
+const validateCreateOrder = (data) => {
   const schema = Joi.object({
     userId: Joi.string().required(),
-    userEmail: Joi.string().email().required(),
-    userName: Joi.string().required(),
-    phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
     items: Joi.array().items(
       Joi.object({
         menuItem: Joi.string().required(),
         quantity: Joi.number().integer().min(1).required(),
-        price: Joi.number().positive().required(),
-        specialInstructions: Joi.string().max(100).allow(null).optional(), // Not implemented yet
+        specialInstructions: Joi.string().max(100).allow(null).optional(),
       })
     ).min(1).required(),
-    totalPrice: Joi.number().positive().required(),
     orderType: Joi.string().valid('pickup', 'delivery').required(),
-    paymentStatus: Joi.string().valid('pending', 'paid').required(),
-    paymentMethod: Joi.string().valid('cash', 'card').required(),
-    deliveryAddress: Joi.string().required(),
+    phone: Joi.string().pattern(/^[0-9]{10}$/).required(),
+    paymentMethod: Joi.string().valid('cash', 'card').optional(),
+    paymentStatus: Joi.string().valid('pending', 'paid').optional(),
+    deliveryAddress: Joi.object({
+      street: Joi.string().required(),
+      city: Joi.string().required(),
+      zipCode: Joi.string().required(),
+      instructions: Joi.string().max(200).allow(null).optional(),
+    }).allow(null).when('orderType', {
+      is: 'delivery',
+      then: Joi.required(),
+      otherwise: Joi.optional(),
+    }),
     specialInstructions: Joi.string().max(200).allow(null).optional(),
+    totalPrice: Joi.number().positive().optional(),
   });
 
   return schema.validate(data);
@@ -149,7 +155,7 @@ module.exports = {
   validateLogin,
   menuSchema,
   validateReservation,
-  validateOrder,
+  validateCreateOrder,
   contactSchema,
   DiscussionSchema,
   validateUserUpdate,

@@ -2,6 +2,7 @@ const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
+const { validateCreateOrder } = require('../utils/validation');
 const {
   createOrderEmptyItemsError,
   createOrderInvalidTypeError,
@@ -19,6 +20,15 @@ const createOrder = asyncHandler(async (req, res) => {
   console.log('Creating order with data:', req.body);
   console.log('User:', req.user);
 
+  // Validate input
+  const { error } = validateCreateOrder(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
+  }
+
   const {
     items,
     orderType,
@@ -28,7 +38,6 @@ const createOrder = asyncHandler(async (req, res) => {
     specialInstructions,
     totalPrice,
     paymentStatus,
-    transactionId
   } = req.body;
 
   // Basic validation
@@ -78,7 +87,7 @@ const createOrder = asyncHandler(async (req, res) => {
       image: menuItem.image,
       price: menuItem.price,
       quantity: item.quantity,
-      specialInstructions: item.specialInstructions || '' // Not implemented yet
+      specialInstructions: item.specialInstructions || null
     };
   });
 
@@ -98,9 +107,9 @@ const createOrder = asyncHandler(async (req, res) => {
     paymentStatus: paymentStatus || 'pending',
     paymentMethod: paymentMethod || 'cash',
     deliveryAddress: orderType === 'delivery' ? deliveryAddress : null,
-    specialInstructions: specialInstructions || '',
+    specialInstructions: specialInstructions || null,
     phone: phone || req.user.phone,
-    transactionId: transactionId || null,
+    //transactionId: transactionId || null,
   });
 
   console.log('Order created in MongoDB:', order._id);
