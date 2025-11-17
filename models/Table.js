@@ -47,8 +47,24 @@ const tableSchema = new mongoose.Schema({
   }
 }, {
   timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toJSON: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  },
+  toObject: {
+    virtuals: true,
+    transform: function(doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    }
+  }
 });
 
 tableSchema.index({ tableNumber: 1 });
