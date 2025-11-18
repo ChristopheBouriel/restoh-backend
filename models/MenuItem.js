@@ -76,13 +76,15 @@ const MenuItemSchema = new mongoose.Schema({
   },
   reviews: [{
     user: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    name: {
-      type: String,
-      required: true,
+      id: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      name: {
+        type: String,
+        required: true,
+      }
     },
     rating: {
       type: Number,
@@ -115,6 +117,26 @@ const MenuItemSchema = new mongoose.Schema({
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
+
+      // Transform reviews structure for frontend
+      if (ret.reviews && Array.isArray(ret.reviews)) {
+        ret.reviews = ret.reviews.map(review => {
+          const userId = review.user?._id || review.user;
+          const userName = review.name;
+
+          return {
+            id: review._id,
+            user: {
+              id: userId.toString(),
+              name: userName
+            },
+            rating: review.rating,
+            comment: review.comment,
+            createdAt: review.createdAt
+          };
+        });
+      }
+
       return ret;
     }
   },
@@ -124,6 +146,26 @@ const MenuItemSchema = new mongoose.Schema({
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
+
+      // Transform reviews structure for frontend
+      if (ret.reviews && Array.isArray(ret.reviews)) {
+        ret.reviews = ret.reviews.map(review => {
+          const userId = review.user?._id || review.user;
+          const userName = review.name;
+
+          return {
+            id: review._id,
+            user: {
+              id: userId.toString(),
+              name: userName
+            },
+            rating: review.rating,
+            comment: review.comment,
+            createdAt: review.createdAt
+          };
+        });
+      }
+
       return ret;
     }
   }

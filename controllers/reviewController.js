@@ -38,7 +38,7 @@ const updateReview = asyncHandler(async (req, res) => {
   }
 
   // Check if the user owns this review
-  if (review.user.toString() !== req.user._id.toString()) {
+  if (review.user.id.toString() !== req.user._id.toString()) {
     const errorResponse = createUnauthorizedReviewUpdateError();
     return res.status(403).json(errorResponse);
   }
@@ -54,9 +54,6 @@ const updateReview = asyncHandler(async (req, res) => {
   // Save and recalculate average rating
   await menuItem.save();
   await menuItem.calculateAverageRating();
-
-  // Populate user data for response
-  await menuItem.populate('reviews.user', 'firstName lastName avatar');
 
   res.status(200).json({
     success: true,
@@ -88,7 +85,7 @@ const deleteReview = asyncHandler(async (req, res) => {
   }
 
   // Check if the user owns this review (or is admin)
-  if (review.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (review.user.id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
     const errorResponse = createUnauthorizedReviewUpdateError();
     return res.status(403).json(errorResponse);
   }

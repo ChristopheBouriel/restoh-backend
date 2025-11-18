@@ -116,8 +116,8 @@ The application uses an **embedded document** approach for reviews, following Mo
 ### Features
 - One review per user per menu item
 - Automatic rating calculation (average & count)
-- Denormalized user name for fast frontend display
-- User data population on review retrieval
+- Nested user object with id and name (no populate/transform needed)
+- Direct schema-to-API structure for better performance
 - Authorization checks (users can only modify their own reviews)
 
 ## 🔌 API Endpoints

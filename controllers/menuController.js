@@ -215,7 +215,7 @@ const addReview = asyncHandler(async (req, res) => {
   }
 
   const existingReview = menuItem.reviews.find(
-    (review) => review.user.toString() === req.user._id.toString()
+    (review) => review.user.id.toString() === req.user._id.toString()
   );
 
   if (existingReview) {
@@ -224,8 +224,10 @@ const addReview = asyncHandler(async (req, res) => {
   }
 
   const newReview = {
-    user: req.user._id,
-    name: req.user.name,
+    user: {
+      id: req.user._id,
+      name: req.user.name,
+    },
     rating,
     comment,
   };
@@ -244,8 +246,7 @@ const addReview = asyncHandler(async (req, res) => {
 // @route   GET /api/menu/:id/review
 // @access  Public
 const getReviews = asyncHandler(async (req, res) => {
-  const menuItem = await MenuItem.findById(req.params.id)
-    .populate('reviews.user', 'firstName lastName avatar');
+  const menuItem = await MenuItem.findById(req.params.id);
 
   if (!menuItem) {
     const errorResponse = createMenuItemNotFoundError(req.params.id);

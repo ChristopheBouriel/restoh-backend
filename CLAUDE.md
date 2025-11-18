@@ -88,11 +88,13 @@ DELETE /api/review/:reviewId            # Delete review (no parent needed)
 - Prevents overly nested URLs (max 2 levels)
 - Follows "Avoid nesting beyond 2-3 levels" (Stack Overflow, Moesif 2024)
 
-**Schema**:
+**Schema** (direct structure, no transforms):
 ```javascript
 MenuItem.reviews: [{
-  user: ObjectId (ref: User),
-  name: String (denormalized user name),
+  user: {
+    id: ObjectId (ref: User),
+    name: String
+  },
   rating: Number (1-5),
   comment: String (max 500 chars),
   createdAt: Date
@@ -102,6 +104,10 @@ MenuItem.rating: {
   count: Number
 }
 ```
+
+**Design rationale**: User data is stored as a nested object directly in the schema.
+This eliminates the need for `.populate()` calls or `toJSON` transforms, providing
+better performance, simpler code, and matches the API response structure exactly.
 
 ### Payment Integration
 - **Stripe**: Card payments with webhook support
