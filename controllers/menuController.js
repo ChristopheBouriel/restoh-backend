@@ -225,6 +225,7 @@ const addReview = asyncHandler(async (req, res) => {
 
   const newReview = {
     user: req.user._id,
+    name: req.user.name,
     rating,
     comment,
   };

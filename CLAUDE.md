@@ -92,6 +92,7 @@ DELETE /api/review/:reviewId            # Delete review (no parent needed)
 ```javascript
 MenuItem.reviews: [{
   user: ObjectId (ref: User),
+  name: String (denormalized user name),
   rating: Number (1-5),
   comment: String (max 500 chars),
   createdAt: Date
