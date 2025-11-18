@@ -14,9 +14,9 @@ This is **restOh-back**, a Node.js/Express backend API for the RestOh Restaurant
 - **Environment**: Requires Node.js >=14.0.0
 
 ### Database Setup
-The application supports dual-mode operation:
+The application uses MongoDB for data persistence:
 - **With MongoDB**: Set `MONGODB_URI` in .env file for persistent storage
-- **Without MongoDB**: Automatically falls back to JSON file-based storage in `/data` directory
+- **Without MongoDB**: Application handles connection failures gracefully and continues running (development mode)
 
 ## Architecture Overview
 
@@ -34,11 +34,11 @@ The application supports dual-mode operation:
 
 ### Key Architectural Patterns
 
-#### Dual Storage System
-The application implements a robust fallback mechanism:
-- **Primary**: MongoDB with Mongoose ODM
-- **Fallback**: JSON file storage via `utils/fileStorage.js`
-- Controllers automatically handle both storage types transparently
+#### Database Architecture
+The application uses MongoDB with Mongoose ODM:
+- **Connection handling**: Graceful error management in `config/database.js`
+- **Development mode**: Continues running if MongoDB is unavailable
+- **Production mode**: Exits on database connection failure
 
 #### Authentication & Authorization
 - JWT-based authentication with `middleware/auth.js`
@@ -48,13 +48,59 @@ The application implements a robust fallback mechanism:
 #### API Structure
 All endpoints follow `/api/{resource}` pattern:
 - `/api/auth` - Authentication (login, register, profile)
-- `/api/menu` - Menu management
+- `/api/menu` - Menu management + nested reviews endpoints
+- `/api/review` - Individual review operations (update, delete)
 - `/api/orders` - Order processing
 - `/api/reservations` - Table reservations
 - `/api/payments` - Payment processing (Stripe)
 - `/api/users` - User management
 - `/api/admin` - Administrative functions
 - `/api/contact` - Contact form handling
+
+#### Reviews & Ratings Architecture
+
+**Data Model**: Reviews are **embedded documents** within MenuItem (not a separate collection)
+
+**Rationale** (aligned with MongoDB best practices 2024):
+- ✅ Strong parent-child relationship (reviews belong to menu items)
+- ✅ Bounded growth (realistic limit: ~1000 reviews per item)
+- ✅ Data locality (improved read performance - 1 query instead of 2)
+- ✅ Within MongoDB 16MB document limit (~60,000 reviews possible)
+
+**Route Design Philosophy** (RESTful best practices 2024):
+
+*Nested routes* - When parent context is essential:
+```
+POST   /api/menu/:menuItemId/review    # Create review (requires parent)
+GET    /api/menu/:menuItemId/review    # List reviews (scoped to parent)
+GET    /api/menu/:menuItemId/rating    # Get rating stats (parent property)
+```
+
+*Flat routes* - For individual resource operations:
+```
+PUT    /api/review/:reviewId            # Update review (ID is sufficient)
+DELETE /api/review/:reviewId            # Delete review (no parent needed)
+```
+
+**Benefits of this hybrid approach**:
+- Avoids redundant validation (menuItemId ↔ reviewId)
+- Simplifies update/delete operations
+- Prevents overly nested URLs (max 2 levels)
+- Follows "Avoid nesting beyond 2-3 levels" (Stack Overflow, Moesif 2024)
+
+**Schema**:
+```javascript
+MenuItem.reviews: [{
+  user: ObjectId (ref: User),
+  rating: Number (1-5),
+  comment: String (max 500 chars),
+  createdAt: Date
+}]
+MenuItem.rating: {
+  average: Number (0-5),
+  count: Number
+}
+```
 
 ### Payment Integration
 - **Stripe**: Card payments with webhook support
@@ -77,9 +123,15 @@ All endpoints follow `/api/{resource}` pattern:
 
 ### Core Entities
 - **User**: Authentication, profiles, preferences, addresses
-- **MenuItem**: Menu items with categories, pricing, availability
+- **MenuItem**: Menu items with categories, pricing, availability, **embedded reviews**
 - **Order**: Order processing with items, payment status, delivery
 - **Reservation**: Table booking system with time slots
+
+### Reviews Data Model
+Reviews are **embedded** within MenuItem documents:
+- **One review per user per item** (UNIQUE constraint)
+- **Automatic rating calculation** via `calculateAverageRating()` method
+- **Populate user data** on read operations (firstName, lastName, avatar)
 
 ### User Roles
 - **user**: Regular customers (order, reserve, profile management)
@@ -93,9 +145,9 @@ All endpoints follow `/api/{resource}` pattern:
 - Payment gateways: `STRIPE_SECRET_KEY`
 
 ### Testing Without Database
-- Application automatically handles MongoDB connection failures
-- Falls back to JSON file storage in `/data` directory
-- Temporary data structures provide consistent API responses
+- Application automatically handles MongoDB connection failures gracefully
+- Continues running in development mode (logs warning)
+- Exits in production mode for data integrity
 
 ### File Upload Handling
 - Cloudinary integration for image storage

@@ -5,13 +5,13 @@ Backend API for RestOh Restaurant Web Application - A comprehensive restaurant m
 ## 🚀 Features
 
 - **User Authentication** - JWT-based auth with role-based access control
-- **Menu Management** - CRUD operations for restaurant menu items
+- **Menu Management** - CRUD operations for restaurant menu items with reviews & ratings
 - **Order Processing** - Complete order lifecycle management
 - **Table Reservations** - Booking system with time slot management
 - **Payment Integration** - Stripe payment processing + Cash on Delivery
 - **Admin Dashboard** - Administrative functions for restaurant management
 - **File Uploads** - Cloudinary integration for image storage
-- **Dual Storage** - MongoDB with automatic JSON fallback for development
+- **Reviews & Ratings** - Embedded review system with automatic rating calculation
 
 ## 🛠️ Tech Stack
 
@@ -89,13 +89,35 @@ CLIENT_URL=http://localhost:3000
 ```
 ├── config/          # Database configuration
 ├── controllers/     # Business logic handlers
-├── data/           # JSON file storage (development fallback)
-├── middleware/     # Authentication & error handling
-├── models/         # MongoDB schemas
-├── routes/         # API endpoint definitions
-├── utils/          # Utility functions
-└── server.js       # Main application entry point
+├── middleware/      # Authentication & error handling
+├── models/          # MongoDB schemas
+├── routes/          # API endpoint definitions
+├── utils/           # Utility functions & helpers
+└── server.js        # Main application entry point
 ```
+
+## 🌟 Reviews & Ratings Architecture
+
+The application uses an **embedded document** approach for reviews, following MongoDB and RESTful API best practices (2024):
+
+### Design Decisions
+
+**Embedded vs Separate Collection**:
+- ✅ Reviews are embedded within MenuItem documents
+- ✅ Provides better read performance (1 query vs 2)
+- ✅ Strong parent-child relationship
+- ✅ Realistic bounds (~1000 reviews per item)
+
+**Nested vs Flat Routes**:
+- **Nested** (`/api/menu/:id/review`) - For creation and collection listing
+- **Flat** (`/api/review/:id`) - For individual operations (update, delete)
+- Avoids redundant validation and prevents overly nested URLs
+
+### Features
+- One review per user per menu item
+- Automatic rating calculation (average & count)
+- User data population on review retrieval
+- Authorization checks (users can only modify their own reviews)
 
 ## 🔌 API Endpoints
 
@@ -106,10 +128,19 @@ CLIENT_URL=http://localhost:3000
 - `PUT /api/auth/updateprofile` - Update user profile
 
 ### Menu
-- `GET /api/menu` - Get all menu items
+- `GET /api/menu` - Get all menu items (with filters & pagination)
+- `GET /api/menu/:id` - Get single menu item
+- `GET /api/menu/popular` - Get popular menu items
 - `POST /api/menu` - Create menu item (Admin)
 - `PUT /api/menu/:id` - Update menu item (Admin)
 - `DELETE /api/menu/:id` - Delete menu item (Admin)
+
+### Reviews & Ratings
+- `POST /api/menu/:id/review` - Add review to menu item (Authenticated)
+- `GET /api/menu/:id/review` - Get all reviews for a menu item
+- `GET /api/menu/:id/rating` - Get rating statistics for a menu item
+- `PUT /api/review/:reviewId` - Update own review (Authenticated)
+- `DELETE /api/review/:reviewId` - Delete own review (Authenticated)
 
 ### Orders
 - `GET /api/orders` - Get user orders
@@ -155,11 +186,12 @@ For payment setup instructions, see [PAYMENT_SETUP_GUIDE.md](./PAYMENT_SETUP_GUI
 
 ## 🗄️ Database
 
-### With MongoDB
+### MongoDB Configuration
 Set `MONGODB_URI` in your `.env` file to connect to MongoDB.
 
-### Without MongoDB (Development)
-The system automatically falls back to JSON file storage in the `data/` directory if MongoDB is unavailable.
+### Connection Error Handling
+- **Development mode**: Logs warning and continues running if MongoDB is unavailable
+- **Production mode**: Exits on database connection failure for data integrity
 
 ## 🔒 Security Features
 
