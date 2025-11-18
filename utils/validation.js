@@ -98,6 +98,11 @@ const contactSchema = Joi.object({
     status: Joi.string().valid('new', 'read', 'replied', 'newlyReplied', 'closed').optional()
 });
 
+// Review validation
+const reviewSchema = Joi.object({
+    rating: Joi.number().integer().min(1).max(5).required(),
+    comment: Joi.string().max(500).allow(null, '').optional()
+});
 
 // Discussion reply validation
 const DiscussionSchema = Joi.object({
@@ -157,6 +162,7 @@ module.exports = {
   validateReservation,
   validateCreateOrder,
   contactSchema,
+  reviewSchema,
   DiscussionSchema,
   validateUserUpdate,
   validateAdminUserUpdate,

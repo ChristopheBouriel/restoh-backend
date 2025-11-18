@@ -6,6 +6,8 @@ const {
   updateMenuItem,
   deleteMenuItem,
   addReview,
+  getReviews,
+  getRating,
   getPopularItems,
 } = require('../controllers/menuController');
 const { protect, authorize } = require('../middleware/auth');
@@ -18,8 +20,10 @@ router.get('/', getMenuItems);
 router.get('/popular', getPopularItems);
 router.get('/:id', getMenuItem);
 
-// Protected routes
+// Review routes (nested)
 router.post('/:id/review', protect, addReview);
+router.get('/:id/review', getReviews);
+router.get('/:id/rating', getRating);
 
 // Admin only routes
 router.post('/', protect, authorize('admin'), uploadMenuImage, createMenuItem);

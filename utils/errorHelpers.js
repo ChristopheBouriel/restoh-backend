@@ -602,6 +602,40 @@ const createReviewAlreadyExistsError = (menuItemId = null) => {
   };
 };
 
+/**
+ * Create a review not found error
+ * @param {string} reviewId - Review ID that was not found
+ * @returns {Object} Structured error response
+ */
+const createReviewNotFoundError = (reviewId = null) => {
+  return {
+    success: false,
+    error: 'Review not found',
+    code: ERROR_CODES.REVIEW_NOT_FOUND,
+    details: {
+      reviewId,
+      message: 'The requested review does not exist or has been deleted.',
+      suggestion: 'Check the review ID or view the list of reviews.'
+    }
+  };
+};
+
+/**
+ * Create an unauthorized review update error
+ * @returns {Object} Structured error response
+ */
+const createUnauthorizedReviewUpdateError = () => {
+  return {
+    success: false,
+    error: 'You can only modify your own reviews',
+    code: ERROR_CODES.UNAUTHORIZED_REVIEW_UPDATE,
+    details: {
+      message: 'You do not have permission to modify this review.',
+      suggestion: 'You can only update or delete reviews that you created.'
+    }
+  };
+};
+
 // ========================================
 // ORDER ERRORS
 // ========================================
@@ -833,6 +867,8 @@ module.exports = {
   createMenuNothingToUpdateError,
   createInvalidRatingError,
   createReviewAlreadyExistsError,
+  createReviewNotFoundError,
+  createUnauthorizedReviewUpdateError,
 
   // Reservations
   createTablesUnavailableError,

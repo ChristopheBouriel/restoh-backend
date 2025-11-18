@@ -239,6 +239,45 @@ const addReview = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get reviews for a menu item
+// @route   GET /api/menu/:id/review
+// @access  Public
+const getReviews = asyncHandler(async (req, res) => {
+  const menuItem = await MenuItem.findById(req.params.id)
+    .populate('reviews.user', 'firstName lastName avatar');
+
+  if (!menuItem) {
+    const errorResponse = createMenuItemNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
+  }
+
+  res.status(200).json({
+    success: true,
+    count: menuItem.reviews.length,
+    data: menuItem.reviews,
+  });
+});
+
+// @desc    Get rating stats for a menu item
+// @route   GET /api/menu/:id/rating
+// @access  Public
+const getRating = asyncHandler(async (req, res) => {
+  const menuItem = await MenuItem.findById(req.params.id);
+
+  if (!menuItem) {
+    const errorResponse = createMenuItemNotFoundError(req.params.id);
+    return res.status(404).json(errorResponse);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      average: menuItem.rating.average,
+      count: menuItem.rating.count,
+    },
+  });
+});
+
 // @desc    Get popular menu items
 // @route   GET /api/menu/popular
 // @access  Public
@@ -263,5 +302,7 @@ module.exports = {
   updateMenuItem,
   deleteMenuItem,
   addReview,
+  getReviews,
+  getRating,
   getPopularItems,
 };

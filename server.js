@@ -123,6 +123,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/email', require('./routes/emailRoutes'));
 app.use('/api/newsletter', require('./routes/newsletterRoutes'));
 app.use('/api/menu', require('./routes/menu'));
+app.use('/api/review', require('./routes/review'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/reservations', require('./routes/reservations'));
 app.use('/api/tables', require('./routes/tables'));
