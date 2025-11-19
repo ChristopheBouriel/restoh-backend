@@ -6,12 +6,13 @@ Backend API for RestOh Restaurant Web Application - A comprehensive restaurant m
 
 - **User Authentication** - JWT-based auth with role-based access control
 - **Menu Management** - CRUD operations for restaurant menu items with reviews & ratings
+- **Restaurant Reviews** - Multi-category review system (service, ambiance, food, value)
 - **Order Processing** - Complete order lifecycle management
 - **Table Reservations** - Booking system with time slot management
 - **Payment Integration** - Stripe payment processing + Cash on Delivery
 - **Admin Dashboard** - Administrative functions for restaurant management
 - **File Uploads** - Cloudinary integration for image storage
-- **Reviews & Ratings** - Embedded review system with automatic rating calculation
+- **Reviews & Ratings** - Dual system (menu items + restaurant overall)
 
 ## 🛠️ Tech Stack
 
@@ -113,12 +114,39 @@ The application uses an **embedded document** approach for reviews, following Mo
 - **Flat** (`/api/review/:id`) - For individual operations (update, delete)
 - Avoids redundant validation and prevents overly nested URLs
 
-### Features
+### Features (Menu Items)
 - One review per user per menu item
 - Automatic rating calculation (average & count)
 - Nested user object with id and name (no populate/transform needed)
 - Direct schema-to-API structure for better performance
 - Authorization checks (users can only modify their own reviews)
+
+## 🏪 Restaurant Reviews & Ratings
+
+The application includes a separate review system for the restaurant itself (not menu items).
+
+### Multi-category Rating System
+
+**Progressive design** allows simple initial usage with future expansion:
+
+**Categories** (all optional except overall):
+- **Overall** ⭐ Required - General experience rating
+- **Service** ⭐ Optional - Staff quality and attentiveness
+- **Ambiance** ⭐ Optional - Atmosphere and decoration
+- **Food** ⭐ Optional - Overall food quality
+- **Value** ⭐ Optional - Price-quality ratio
+
+### Evolution Strategy
+- **Phase 1**: Use only `overall` rating (simple 1-5 stars)
+- **Phase 2**: Enable all 5 categories for detailed feedback
+- **No migration needed**: Optional fields are null until activated
+
+### Features
+- One review per user for the restaurant
+- Multi-category ratings with automatic aggregation
+- Paginated review list for home page display
+- Visit date tracking (optional)
+- Statistics endpoint with category breakdowns
 
 ## 🔌 API Endpoints
 
@@ -136,12 +164,19 @@ The application uses an **embedded document** approach for reviews, following Mo
 - `PUT /api/menu/:id` - Update menu item (Admin)
 - `DELETE /api/menu/:id` - Delete menu item (Admin)
 
-### Reviews & Ratings
+### Menu Reviews & Ratings
 - `POST /api/menu/:id/review` - Add review to menu item (Authenticated)
 - `GET /api/menu/:id/review` - Get all reviews for a menu item
 - `GET /api/menu/:id/rating` - Get rating statistics for a menu item
 - `PUT /api/review/:reviewId` - Update own review (Authenticated)
 - `DELETE /api/review/:reviewId` - Delete own review (Authenticated)
+
+### Restaurant Reviews & Ratings
+- `POST /api/restaurant/review` - Add restaurant review (Authenticated)
+- `GET /api/restaurant/reviews` - Get all restaurant reviews (paginated)
+- `GET /api/restaurant/rating` - Get restaurant rating statistics
+- `PUT /api/restaurant/review/:id` - Update own restaurant review (Authenticated)
+- `DELETE /api/restaurant/review/:id` - Delete own restaurant review (Authenticated)
 
 ### Orders
 - `GET /api/orders` - Get user orders

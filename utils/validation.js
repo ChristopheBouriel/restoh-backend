@@ -98,10 +98,23 @@ const contactSchema = Joi.object({
     status: Joi.string().valid('new', 'read', 'replied', 'newlyReplied', 'closed').optional()
 });
 
-// Review validation
+// Review validation (menu item)
 const reviewSchema = Joi.object({
     rating: Joi.number().integer().min(1).max(5).required(),
     comment: Joi.string().max(500).allow(null, '').optional()
+});
+
+// Restaurant review validation (multi-categories, progressive usage)
+const restaurantReviewSchema = Joi.object({
+    ratings: Joi.object({
+        overall: Joi.number().integer().min(1).max(5).required(),
+        service: Joi.number().integer().min(1).max(5).allow(null).optional(),
+        ambiance: Joi.number().integer().min(1).max(5).allow(null).optional(),
+        food: Joi.number().integer().min(1).max(5).allow(null).optional(),
+        value: Joi.number().integer().min(1).max(5).allow(null).optional()
+    }).required(),
+    comment: Joi.string().max(500).allow(null, '').optional(),
+    visitDate: Joi.date().allow(null).optional()
 });
 
 // Discussion reply validation
@@ -163,6 +176,7 @@ module.exports = {
   validateCreateOrder,
   contactSchema,
   reviewSchema,
+  restaurantReviewSchema,
   DiscussionSchema,
   validateUserUpdate,
   validateAdminUserUpdate,

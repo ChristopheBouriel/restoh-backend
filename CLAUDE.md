@@ -49,7 +49,8 @@ The application uses MongoDB with Mongoose ODM:
 All endpoints follow `/api/{resource}` pattern:
 - `/api/auth` - Authentication (login, register, profile)
 - `/api/menu` - Menu management + nested reviews endpoints
-- `/api/review` - Individual review operations (update, delete)
+- `/api/review` - Individual menu review operations (update, delete)
+- `/api/restaurant` - Restaurant reviews + rating statistics
 - `/api/orders` - Order processing
 - `/api/reservations` - Table reservations
 - `/api/payments` - Payment processing (Stripe)
@@ -108,6 +109,61 @@ MenuItem.rating: {
 **Design rationale**: User data is stored as a nested object directly in the schema.
 This eliminates the need for `.populate()` calls or `toJSON` transforms, providing
 better performance, simpler code, and matches the API response structure exactly.
+
+#### Restaurant Reviews & Ratings Architecture
+
+**Data Model**: Restaurant reviews are stored in a **separate collection** (RestaurantReview)
+
+**Progressive multi-categories design** (Phase 1: simple usage, Phase 2: full features):
+
+**Schema**:
+```javascript
+RestaurantReview {
+  user: {
+    id: ObjectId (ref: User),
+    name: String
+  },
+  ratings: {
+    overall: Number (1-5) REQUIRED,
+    service: Number (1-5) | null OPTIONAL,
+    ambiance: Number (1-5) | null OPTIONAL,
+    food: Number (1-5) | null OPTIONAL,
+    value: Number (1-5) | null OPTIONAL
+  },
+  comment: String (max 500),
+  visitDate: Date | null,
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+**Routes**:
+```
+POST   /api/restaurant/review           # Add restaurant review (auth)
+GET    /api/restaurant/reviews          # List reviews (public, paginated)
+GET    /api/restaurant/rating           # Get statistics (all categories)
+PUT    /api/restaurant/review/:id       # Update own review (auth)
+DELETE /api/restaurant/review/:id       # Delete own review (auth)
+```
+
+**Evolution strategy**:
+- Phase 1: Frontend uses only `ratings.overall` (simple 1-5 star rating)
+- Phase 2: Activate `service`, `ambiance`, `food`, `value` categories
+- No database migration needed thanks to nullable optional fields
+
+**Statistics endpoint** returns:
+```javascript
+{
+  totalReviews: Number,
+  ratings: {
+    overall: { average, count },
+    service: { average, count },  // 0 if no data yet
+    ambiance: { average, count }, // 0 if no data yet
+    food: { average, count },     // 0 if no data yet
+    value: { average, count }     // 0 if no data yet
+  }
+}
+```
 
 ### Payment Integration
 - **Stripe**: Card payments with webhook support
