@@ -2,6 +2,7 @@ const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const { menuSchema } = require('../utils/validation');
 const { deleteImage } = require('../middleware/cloudinaryUpload');
+const { getPopularItems: getPopularItemsFromHelper } = require('../utils/popularItemsHelper');
 const {
   createMenuItemNotFoundError,
   createMenuNothingToUpdateError,
@@ -284,16 +285,30 @@ const getRating = asyncHandler(async (req, res) => {
 // @route   GET /api/menu/popular
 // @access  Public
 const getPopularItems = asyncHandler(async (req, res) => {
-  const limit = parseInt(req.query.limit, 10) || 6;
-
-  const popularItems = await MenuItem.find({ isAvailable: true })
-    .sort({ orderCount: -1 })
-    .limit(limit);
+  // Utilise le helper qui sélectionne par catégorie :
+  // 2 appetizers, 3 mains, 1 dessert, 2 beverages
+  const popularItems = await getPopularItemsFromHelper();
 
   res.status(200).json({
     success: true,
     count: popularItems.length,
     data: popularItems,
+  });
+});
+
+// @desc    Get restaurant suggested items
+// @route   GET /api/menu/suggestions
+// @access  Public
+const getSuggestedItems = asyncHandler(async (req, res) => {
+  const suggestedItems = await MenuItem.find({
+    isSuggested: true,
+    isAvailable: true
+  }).sort({ createdAt: -1 });
+
+  res.status(200).json({
+    success: true,
+    count: suggestedItems.length,
+    data: suggestedItems,
   });
 });
 
@@ -307,4 +322,5 @@ module.exports = {
   getReviews,
   getRating,
   getPopularItems,
+  getSuggestedItems,
 };

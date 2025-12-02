@@ -105,6 +105,14 @@ const MenuItemSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isPopularOverride: {
+    type: Boolean,
+    default: false,  // false = participe au calcul auto, true = exclu
+  },
+  isSuggested: {
+    type: Boolean,
+    default: false,  // true = suggestion du restaurant
+  },
   orderCount: {
     type: Number,
     default: 0,
@@ -173,6 +181,12 @@ const MenuItemSchema = new mongoose.Schema({
 
 // Create index for search functionality
 MenuItemSchema.index({ name: 'text', description: 'text' });
+
+// Index for popular items query (by category, excluding overridden, sorted by orderCount)
+MenuItemSchema.index({ category: 1, isPopularOverride: 1, orderCount: -1 });
+
+// Index for suggested items query
+MenuItemSchema.index({ isSuggested: 1 });
 
 // Calculate average rating
 MenuItemSchema.methods.calculateAverageRating = function() {

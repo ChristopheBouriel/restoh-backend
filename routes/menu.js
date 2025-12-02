@@ -9,6 +9,7 @@ const {
   getReviews,
   getRating,
   getPopularItems,
+  getSuggestedItems,
 } = require('../controllers/menuController');
 const { protect, authorize } = require('../middleware/auth');
 const { uploadMenuImage } = require('../middleware/cloudinaryUpload');
@@ -18,6 +19,7 @@ const router = express.Router();
 // Public routes
 router.get('/', getMenuItems);
 router.get('/popular', getPopularItems);
+router.get('/suggestions', getSuggestedItems);
 router.get('/:id', getMenuItem);
 
 // Review routes (nested)
