@@ -2,7 +2,11 @@ const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const { menuSchema } = require('../utils/validation');
 const { deleteImage } = require('../middleware/cloudinaryUpload');
-const { getPopularItems: getPopularItemsFromHelper } = require('../utils/popularItemsHelper');
+const {
+  getPopularItems: getPopularItemsFromHelper,
+  enrichItemsWithIsPopular,
+  enrichItemWithIsPopular
+} = require('../utils/popularItemsHelper');
 const {
   createMenuItemNotFoundError,
   createMenuNothingToUpdateError,
@@ -46,6 +50,9 @@ const getMenuItems = asyncHandler(async (req, res) => {
     .limit(limit)
     .skip(startIndex);
 
+  // Enrich with dynamically calculated isPopular
+  const enrichedItems = await enrichItemsWithIsPopular(menuItems);
+
   const pagination = {};
   if (startIndex + limit < total) {
     pagination.next = {
@@ -62,10 +69,10 @@ const getMenuItems = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    count: menuItems.length,
+    count: enrichedItems.length,
     total,
     pagination,
-    data: menuItems,
+    data: enrichedItems,
   });
 });
 
@@ -79,10 +86,12 @@ const getMenuItem = asyncHandler(async (req, res) => {
     const errorResponse = createMenuItemNotFoundError(req.params.id);
     return res.status(404).json(errorResponse);
   }
+  
+  const enrichedItem = await enrichItemWithIsPopular(menuItem);
 
   res.status(200).json({
     success: true,
-    data: menuItem,
+    data: enrichedItem,
   });
 });
 

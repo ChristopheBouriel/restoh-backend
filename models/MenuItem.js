@@ -101,10 +101,6 @@ const MenuItemSchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
-  isPopular: {
-    type: Boolean,
-    default: false,
-  },
   isPopularOverride: {
     type: Boolean,
     default: false,  // false = participe au calcul auto, true = exclu
