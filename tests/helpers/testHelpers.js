@@ -68,6 +68,7 @@ const createTestOrder = async (orderData = {}) => {
     userId: orderData.userId,
     userEmail: 'test@example.com',
     userName: 'Test User',
+    phone: '0612345678',
     items: [{
       menuItem: menuItemId,
       name: 'Test Item',
@@ -80,7 +81,11 @@ const createTestOrder = async (orderData = {}) => {
     status: 'pending',
     paymentStatus: 'pending',
     paymentMethod: 'cash',
-    deliveryAddress: '123 Test St',
+    deliveryAddress: {
+      street: '123 Test St',
+      city: 'Test City',
+      zipCode: '75001',
+    },
   };
 
   const order = await Order.create({ ...defaultOrder, ...orderData });

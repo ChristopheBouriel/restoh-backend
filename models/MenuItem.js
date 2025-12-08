@@ -36,7 +36,7 @@ const MenuItemSchema = new mongoose.Schema({
   cuisine: {
     type: String,
     enum: {
-      values: ['asian', 'lao', 'continental'],
+      values: ['asian', 'lao', 'continental', null],
       message: 'Please select a valid cuisine type',
     },
     default: null,
