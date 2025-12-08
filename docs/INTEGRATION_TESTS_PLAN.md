@@ -64,25 +64,32 @@
 
 ---
 
-### Phase 2: Auth Routes Integration Tests
+### Phase 2: Auth Routes Integration Tests ✅ COMPLETED
 **Goal**: Test real authentication flow (most critical)
 
 #### Step 2.1: Create `tests/integration/authRoutes.test.js`
 Test cases:
-- [ ] POST `/api/auth/register` - Success with valid data
-- [ ] POST `/api/auth/register` - Fail with duplicate email
-- [ ] POST `/api/auth/register` - Fail with invalid data (missing fields, weak password)
-- [ ] POST `/api/auth/login` - Success with valid credentials
-- [ ] POST `/api/auth/login` - Fail with wrong password
-- [ ] POST `/api/auth/login` - Fail with non-existent user
-- [ ] GET `/api/auth/me` - Success with valid token
-- [ ] GET `/api/auth/me` - Fail without token
-- [ ] GET `/api/auth/me` - Fail with invalid/expired token
-- [ ] POST `/api/auth/logout` - Success (cookie cleared)
-- [ ] PUT `/api/auth/updatepassword` - Success with valid current password
-- [ ] PUT `/api/auth/updatepassword` - Fail with wrong current password
+- [x] POST `/api/auth/register` - Success with valid data
+- [x] POST `/api/auth/register` - Fail with duplicate email
+- [x] POST `/api/auth/register` - Fail with invalid data (missing fields, weak password)
+- [x] POST `/api/auth/login` - Success with valid credentials
+- [x] POST `/api/auth/login` - Fail with wrong password
+- [x] POST `/api/auth/login` - Fail with non-existent user
+- [x] POST `/api/auth/login` - Fail for inactive account
+- [x] GET `/api/auth/me` - Success with valid token
+- [x] GET `/api/auth/me` - Fail without token
+- [x] GET `/api/auth/me` - Fail with invalid token
+- [x] POST `/api/auth/logout` - Success
+- [x] PUT `/api/auth/change-password` - Success with valid current password
+- [x] PUT `/api/auth/change-password` - Fail with wrong current password
+- [x] PUT `/api/auth/profile` - Success
+- [x] DELETE `/api/auth/delete-account` - Success (soft delete)
 
-**Validation**: `npm run test:integration -- authRoutes`
+#### Step 2.2: Test Results
+- **27 auth tests passing**
+- Total: **41 passed, 6 skipped**
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
