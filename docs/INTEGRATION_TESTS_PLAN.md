@@ -191,19 +191,48 @@ Test cases:
 
 ---
 
-### Phase 5: User Routes Integration Tests
-**Goal**: Test user profile management
+### Phase 5: User Routes Integration Tests ✅ COMPLETED
+**Goal**: Test admin user management (user profile routes are in authRoutes - Phase 2)
 
 #### Step 5.1: Create `tests/integration/userRoutes.test.js`
-Test cases:
-- [ ] GET `/api/users/profile` - Get own profile
-- [ ] PUT `/api/users/profile` - Update profile
-- [ ] PUT `/api/users/profile` - Fail with invalid data
-- [ ] DELETE `/api/users/profile` - Soft delete account
-- [ ] Admin: GET `/api/users` - Get all users
-- [ ] Admin: DELETE `/api/users/:id` - Delete user
+Note: `/api/users` routes are admin-only. User profile management is via `/api/auth/profile` (tested in Phase 2).
 
-**Validation**: `npm run test:integration -- userRoutes`
+Test cases:
+- [x] GET `/api/users` - Get all users (admin)
+- [x] GET `/api/users` - Filter by role
+- [x] GET `/api/users` - Filter by active status
+- [x] GET `/api/users` - Search by name
+- [x] GET `/api/users` - Paginate results
+- [x] GET `/api/users` - Fail as regular user
+- [x] GET `/api/users` - Fail without authentication
+- [x] GET `/api/users/:id` - Get single user
+- [x] GET `/api/users/:id` - Return 404 for non-existent
+- [x] GET `/api/users/:id` - Fail as regular user
+- [x] PUT `/api/users/:id` - Update user role
+- [x] PUT `/api/users/:id` - Update active status
+- [x] PUT `/api/users/:id` - Fail to update own role
+- [x] PUT `/api/users/:id` - Fail to deactivate own account
+- [x] PUT `/api/users/:id` - Fail to update deleted account
+- [x] PUT `/api/users/:id` - Return 404 for non-existent
+- [x] PUT `/api/users/:id` - Fail as regular user
+- [x] DELETE `/api/users/:id` - Delete user
+- [x] DELETE `/api/users/:id` - Fail to delete own account
+- [x] DELETE `/api/users/:id` - Fail to delete already deleted
+- [x] DELETE `/api/users/:id` - Return 404 for non-existent
+- [x] DELETE `/api/users/:id` - Fail as regular user
+- [x] GET `/api/users/stats` - Get statistics
+- [x] GET `/api/users/stats` - Fail as regular user
+- [x] GET `/api/users/admin` - Get users with advanced filtering
+- [x] GET `/api/users/admin` - Filter by status
+- [x] GET `/api/users/admin` - Search by name/email
+- [x] GET `/api/users/admin` - Fail as regular user
+
+#### Step 5.2: Test Results
+- **28 user tests passing**
+- Total: **133 passed, 6 skipped** (5 test suites)
+- userController coverage: 96%
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
