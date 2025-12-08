@@ -14,10 +14,6 @@ beforeAll(async () => {
     await mongoose.disconnect();
   }
 
-  // Clear mongoose model cache to avoid conflicts
-  mongoose.connection.models = {};
-  mongoose.models = {};
-
   mongoServer = await MongoMemoryServer.create();
   const mongoUri = mongoServer.getUri();
 
@@ -25,6 +21,13 @@ beforeAll(async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
+
+  // Register all models after connection (required for populate() to work)
+  require('../models/User');
+  require('../models/MenuItem');
+  require('../models/Order');
+  require('../models/Reservation');
+  require('../models/RestaurantReview');
 });
 
 afterAll(async () => {

@@ -93,23 +93,49 @@ Test cases:
 
 ---
 
-### Phase 3: Order Routes Integration Tests
+### Phase 3: Order Routes Integration Tests ✅ COMPLETED
 **Goal**: Test complete order flow
 
 #### Step 3.1: Create `tests/integration/orderRoutes.test.js`
 Test cases:
-- [ ] POST `/api/orders` - Create order (authenticated)
-- [ ] POST `/api/orders` - Fail without auth
-- [ ] POST `/api/orders` - Fail with invalid data
-- [ ] GET `/api/orders` - Get user's orders
-- [ ] GET `/api/orders/:id` - Get single order (owner)
-- [ ] GET `/api/orders/:id` - Fail accessing other user's order
-- [ ] PUT `/api/orders/:id/cancel` - Cancel pending order
-- [ ] PUT `/api/orders/:id/cancel` - Fail cancel paid order
-- [ ] Admin: GET `/api/orders/admin/all` - Get all orders
-- [ ] Admin: PUT `/api/orders/:id/status` - Update order status
+- [x] POST `/api/orders` - Create order (authenticated)
+- [x] POST `/api/orders` - Create pickup order without delivery address
+- [x] POST `/api/orders` - Fail without auth
+- [x] POST `/api/orders` - Fail with empty items
+- [x] POST `/api/orders` - Fail with invalid order type
+- [x] POST `/api/orders` - Fail delivery order without address
+- [x] POST `/api/orders` - Fail with non-existent menu item
+- [x] GET `/api/orders` - Get user's orders
+- [x] GET `/api/orders` - Filter orders by status
+- [x] GET `/api/orders` - Paginate orders
+- [x] GET `/api/orders/:id` - Get single order (owner)
+- [x] GET `/api/orders/:id` - Fail accessing other user's order
+- [x] GET `/api/orders/:id` - Admin can access any order
+- [x] GET `/api/orders/:id` - Return 404 for non-existent order
+- [x] DELETE `/api/orders/:id` - Cancel pending order
+- [x] DELETE `/api/orders/:id` - Cancel confirmed order with pending payment
+- [x] DELETE `/api/orders/:id` - Fail cancel paid order
+- [x] DELETE `/api/orders/:id` - Fail cancel preparing order
+- [x] DELETE `/api/orders/:id` - Fail cancel delivered order
+- [x] DELETE `/api/orders/:id` - Fail cancel other user's order
+- [x] PATCH `/api/orders/:id/status` - Update order status (admin)
+- [x] PATCH `/api/orders/:id/status` - Fail as regular user
+- [x] PATCH `/api/orders/:id/status` - Fail with invalid status
+- [x] GET `/api/orders/admin` - Get all orders (admin)
+- [x] GET `/api/orders/admin` - Fail as regular user
+- [x] GET `/api/orders/stats` - Get order stats (admin)
+- [x] GET `/api/orders/stats` - Fail as regular user
 
-**Validation**: `npm run test:integration -- orderRoutes`
+#### Step 3.2: Test Results
+- **28 order tests passing**
+- Total: **69 passed, 6 skipped** (3 test suites)
+
+#### Key Fixes Applied
+- Added `errorHandler` middleware to test app for proper error responses
+- Updated `tests/setup.js` to register all models after connection (fixes `MissingSchemaError` for populate)
+- Fixed test assertion to use `data.id` instead of `data._id` (Order model transforms `_id` to `id` in toJSON)
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
