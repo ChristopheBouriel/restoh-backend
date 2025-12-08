@@ -28,6 +28,7 @@ beforeAll(async () => {
   require('../models/Order');
   require('../models/Reservation');
   require('../models/RestaurantReview');
+  require('../models/Table');
 });
 
 afterAll(async () => {

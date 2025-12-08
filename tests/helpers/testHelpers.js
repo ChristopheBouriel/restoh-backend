@@ -2,6 +2,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const MenuItem = require('../../models/MenuItem');
 const Order = require('../../models/Order');
+const Reservation = require('../../models/Reservation');
+const Table = require('../../models/Table');
 
 const createTestUser = async (userData = {}) => {
   const defaultUser = {
@@ -142,11 +144,64 @@ const mockResponse = () => {
 
 const mockNext = () => jest.fn();
 
+// Helper to get a future date (days from now)
+const getFutureDate = (daysFromNow = 3) => {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromNow);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const createTestTable = async (tableData = {}) => {
+  const defaultTable = {
+    tableNumber: tableData.tableNumber || 1,
+    capacity: tableData.capacity || 4,
+    isActive: true,
+    tableBookings: [],
+  };
+
+  const table = await Table.create({ ...defaultTable, ...tableData });
+  return table;
+};
+
+const createTestReservation = async (reservationData = {}) => {
+  const defaultDate = reservationData.date || getFutureDate(3);
+  const isPastDate = new Date(defaultDate) < new Date().setHours(0, 0, 0, 0);
+
+  const defaultReservation = {
+    userId: reservationData.userId,
+    userEmail: reservationData.userEmail || 'test@example.com',
+    userName: reservationData.userName || 'Test User',
+    date: defaultDate,
+    slot: reservationData.slot || 12, // 12:00
+    guests: reservationData.guests || 2,
+    tableNumber: reservationData.tableNumber || [1],
+    contactPhone: reservationData.contactPhone || '0612345678',
+    status: reservationData.status || 'confirmed',
+    specialRequest: reservationData.specialRequest || null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  // Bypass validation for past dates (used for testing historical data)
+  if (isPastDate) {
+    const result = await Reservation.collection.insertOne(defaultReservation);
+    const reservation = await Reservation.findById(result.insertedId);
+    return reservation;
+  }
+
+  const reservation = await Reservation.create(defaultReservation);
+  return reservation;
+};
+
 module.exports = {
   createTestUser,
   createTestAdmin,
   createTestMenuItem,
   createTestOrder,
+  createTestTable,
+  createTestReservation,
+  getFutureDate,
   generateAuthToken,
   mockRequest,
   mockResponse,

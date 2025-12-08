@@ -139,22 +139,55 @@ Test cases:
 
 ---
 
-### Phase 4: Reservation Routes Integration Tests
+### Phase 4: Reservation Routes Integration Tests ✅ COMPLETED
 **Goal**: Test reservation system
 
 #### Step 4.1: Create `tests/integration/reservationRoutes.test.js`
 Test cases:
-- [ ] POST `/api/reservations` - Create reservation
-- [ ] POST `/api/reservations` - Fail with conflicting time slot
-- [ ] POST `/api/reservations` - Fail with past date
-- [ ] GET `/api/reservations` - Get user's reservations
-- [ ] GET `/api/reservations/:id` - Get single reservation
-- [ ] PUT `/api/reservations/:id` - Update reservation
-- [ ] PUT `/api/reservations/:id/cancel` - Cancel reservation
-- [ ] Admin: GET `/api/reservations/admin/all` - Get all reservations
-- [ ] Admin: PUT `/api/reservations/:id/status` - Update status
+- [x] POST `/api/reservations` - Create reservation with valid data
+- [x] POST `/api/reservations` - Create reservation with special request
+- [x] POST `/api/reservations` - Fail without authentication
+- [x] POST `/api/reservations` - Fail with past date
+- [x] POST `/api/reservations` - Fail with invalid phone number
+- [x] POST `/api/reservations` - Fail with guests exceeding limit
+- [x] POST `/api/reservations` - Fail with missing required fields
+- [x] GET `/api/reservations` - Get user's reservations
+- [x] GET `/api/reservations` - Filter by status
+- [x] GET `/api/reservations` - Paginate results
+- [x] PUT `/api/reservations/:id` - Update own reservation
+- [x] PUT `/api/reservations/:id` - Fail to update other user reservation
+- [x] PUT `/api/reservations/:id` - Fail to update non-confirmed reservation
+- [x] PUT `/api/reservations/:id` - Return 404 for non-existent
+- [x] DELETE `/api/reservations/:id` - Cancel confirmed reservation
+- [x] DELETE `/api/reservations/:id` - Fail to cancel already cancelled
+- [x] DELETE `/api/reservations/:id` - Fail to cancel completed
+- [x] DELETE `/api/reservations/:id` - Fail to cancel other user reservation
+- [x] PATCH `/api/reservations/admin/:id/status` - Update status (admin)
+- [x] PATCH `/api/reservations/admin/:id/status` - Fail as regular user
+- [x] PATCH `/api/reservations/admin/:id/status` - Fail with invalid status
+- [x] PATCH `/api/reservations/admin/:id/status` - Fail without status
+- [x] GET `/api/reservations/admin/recent` - Get recent reservations (admin)
+- [x] GET `/api/reservations/admin/recent` - Fail as regular user
+- [x] GET `/api/reservations/admin/stats` - Get statistics (admin)
+- [x] GET `/api/reservations/admin/stats` - Fail as regular user
+- [x] PUT `/api/reservations/admin/:id` - Update reservation (admin)
+- [x] PUT `/api/reservations/admin/:id` - Fail as regular user
+- [x] PUT `/api/reservations/admin/:id` - Fail with invalid status
+- [x] GET `/api/reservations/admin/history` - Require date range
+- [x] GET `/api/reservations/admin/history` - Get historical reservations
+- [x] GET `/api/reservations/admin/history` - Fail as regular user
 
-**Validation**: `npm run test:integration -- reservationRoutes`
+#### Step 4.2: Test Results
+- **36 reservation tests passing**
+- Total: **105 passed, 6 skipped** (4 test suites)
+
+#### Key Implementation Notes
+- Added `createTestTable` and `createTestReservation` helpers to testHelpers.js
+- Past date reservations bypass Mongoose validation using `collection.insertOne()`
+- Table capacity validation rule: capacity must be <= guests + 1
+- Added Table model to setup.js for model registration
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
