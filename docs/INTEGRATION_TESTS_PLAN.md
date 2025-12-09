@@ -281,18 +281,51 @@ Test cases:
 
 ---
 
-### Phase 7: Menu Item Review Routes Integration Tests
+### Phase 7: Menu Item Review Routes Integration Tests ✅ COMPLETED
 **Goal**: Test menu item reviews (nested + flat routes)
 
-#### Step 7.1: Update `tests/integration/menuRoutes.test.js`
-Additional test cases:
-- [ ] POST `/api/menu/:id/review` - Already exists, verify working
-- [ ] GET `/api/menu/:id/review` - Get item reviews
-- [ ] GET `/api/menu/:id/rating` - Get item rating stats
-- [ ] PUT `/api/review/:id` - Update own review (flat route)
-- [ ] DELETE `/api/review/:id` - Delete own review (flat route)
+#### Step 7.1: Create `tests/integration/reviewRoutes.test.js`
+Test cases:
+- [x] POST `/api/menu/:id/review` - Add review to menu item
+- [x] POST `/api/menu/:id/review` - Fail duplicate review from same user
+- [x] POST `/api/menu/:id/review` - Fail without authentication
+- [x] POST `/api/menu/:id/review` - Fail with invalid rating
+- [x] POST `/api/menu/:id/review` - Fail with rating below minimum
+- [x] POST `/api/menu/:id/review` - Return 404 for non-existent menu item
+- [x] GET `/api/menu/:id/review` - Get all reviews (public)
+- [x] GET `/api/menu/:id/review` - Return empty array for no reviews
+- [x] GET `/api/menu/:id/review` - Return 404 for non-existent menu item
+- [x] GET `/api/menu/:id/rating` - Get rating stats (public)
+- [x] GET `/api/menu/:id/rating` - Return zero for no reviews
+- [x] GET `/api/menu/:id/rating` - Return 404 for non-existent menu item
+- [x] PUT `/api/review/:reviewId` - Update own review
+- [x] PUT `/api/review/:reviewId` - Update only rating
+- [x] PUT `/api/review/:reviewId` - Update only comment
+- [x] PUT `/api/review/:reviewId` - Fail update other user review
+- [x] PUT `/api/review/:reviewId` - Fail without authentication
+- [x] PUT `/api/review/:reviewId` - Return 404 for non-existent review
+- [x] PUT `/api/review/:reviewId` - Fail with invalid rating value
+- [x] PUT `/api/review/:reviewId` - Recalculate average after update
+- [x] DELETE `/api/review/:reviewId` - Delete own review
+- [x] DELETE `/api/review/:reviewId` - Admin can delete any review
+- [x] DELETE `/api/review/:reviewId` - Fail delete other user review (non-admin)
+- [x] DELETE `/api/review/:reviewId` - Fail without authentication
+- [x] DELETE `/api/review/:reviewId` - Return 404 for non-existent review
+- [x] DELETE `/api/review/:reviewId` - Recalculate average after deletion
 
-**Validation**: `npm run test:integration -- menuRoutes`
+#### Step 7.2: Test Results
+- **26 menu item review tests passing**
+- Total: **183 passed, 6 skipped** (7 test suites)
+- reviewController coverage: 91%
+- menuController coverage: 67%
+
+#### Key Implementation Notes
+- Created separate `reviewRoutes.test.js` for real auth integration tests
+- Tests cover nested routes (`/api/menu/:id/review`) and flat routes (`/api/review/:reviewId`)
+- Verifies average rating recalculation on both update and delete
+- Tests owner verification and admin override permissions
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
