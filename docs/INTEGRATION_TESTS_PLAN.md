@@ -236,20 +236,48 @@ Test cases:
 
 ---
 
-### Phase 6: Restaurant Review Routes Integration Tests
+### Phase 6: Restaurant Review Routes Integration Tests ✅ COMPLETED
 **Goal**: Test restaurant-level reviews
 
 #### Step 6.1: Create `tests/integration/restaurantReviewRoutes.test.js`
 Test cases:
-- [ ] POST `/api/restaurant/review` - Add review (authenticated)
-- [ ] POST `/api/restaurant/review` - Fail duplicate review
-- [ ] GET `/api/restaurant/reviews` - Get all reviews (public)
-- [ ] GET `/api/restaurant/rating` - Get rating statistics
-- [ ] PUT `/api/restaurant/review/:id` - Update own review
-- [ ] PUT `/api/restaurant/review/:id` - Fail update other's review
-- [ ] DELETE `/api/restaurant/review/:id` - Delete own review
+- [x] POST `/api/restaurant/review` - Add review (authenticated)
+- [x] POST `/api/restaurant/review` - Add review with all rating categories
+- [x] POST `/api/restaurant/review` - Fail duplicate review
+- [x] POST `/api/restaurant/review` - Fail without authentication
+- [x] POST `/api/restaurant/review` - Fail without overall rating
+- [x] POST `/api/restaurant/review` - Fail with invalid rating value
+- [x] POST `/api/restaurant/review` - Fail with rating below minimum
+- [x] GET `/api/restaurant/reviews` - Get all reviews (public)
+- [x] GET `/api/restaurant/reviews` - Paginate reviews
+- [x] GET `/api/restaurant/reviews` - Sort reviews by date
+- [x] GET `/api/restaurant/rating` - Get rating statistics (public)
+- [x] GET `/api/restaurant/rating` - Calculate correct average
+- [x] GET `/api/restaurant/rating` - Return zero for categories with no data
+- [x] PUT `/api/restaurant/review/:id` - Update own review
+- [x] PUT `/api/restaurant/review/:id` - Update partial fields
+- [x] PUT `/api/restaurant/review/:id` - Fail update other's review
+- [x] PUT `/api/restaurant/review/:id` - Fail without authentication
+- [x] PUT `/api/restaurant/review/:id` - Return 404 for non-existent
+- [x] PUT `/api/restaurant/review/:id` - Fail with invalid rating value
+- [x] DELETE `/api/restaurant/review/:id` - Delete own review
+- [x] DELETE `/api/restaurant/review/:id` - Admin can delete any review
+- [x] DELETE `/api/restaurant/review/:id` - Fail delete other's review (non-admin)
+- [x] DELETE `/api/restaurant/review/:id` - Fail without authentication
+- [x] DELETE `/api/restaurant/review/:id` - Return 404 for non-existent
 
-**Validation**: `npm run test:integration -- restaurantReviewRoutes`
+#### Step 6.2: Test Results
+- **24 restaurant review tests passing**
+- Total: **157 passed, 6 skipped** (6 test suites)
+- restaurantReviewController coverage: 97%
+
+#### Key Implementation Notes
+- Added `createTestRestaurantReview` helper in test file
+- Tests cover both required (overall) and optional (service, ambiance, food, value) ratings
+- Public GET routes don't require authentication
+- Admin can delete any review
+
+**Validation**: ✅ `npm test` passes
 
 ---
 

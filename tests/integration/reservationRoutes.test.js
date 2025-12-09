@@ -409,22 +409,28 @@ describe('Reservation Routes Integration Tests', () => {
     });
 
     it('should update reservation status as admin', async () => {
-      // Create a reservation that's happening now for seated status
-      const nowReservation = await createTestReservation({
+      // Create a past reservation using direct insert to bypass date validation
+      // This simulates a reservation that already happened and can be marked as seated
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
+
+      const pastReservation = await createTestReservation({
         userId: user._id,
         userEmail: user.email,
         userName: user.name,
         status: 'confirmed',
-        date: new Date(), // Today
-        slot: new Date().getHours(), // Current hour slot
+        date: yesterday, // Yesterday (past)
+        slot: 3, // 12:00 slot
+        tableNumber: [3], // Use different table to avoid conflicts
       });
 
       const res = await request(app)
-        .patch(`/api/reservations/admin/${nowReservation._id}/status`)
+        .patch(`/api/reservations/admin/${pastReservation._id}/status`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ status: 'seated' })
-        .expect(200);
+        .send({ status: 'seated' });
 
+      expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data.status).toBe('seated');
     });
