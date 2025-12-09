@@ -329,16 +329,47 @@ Test cases:
 
 ---
 
-### Phase 8: Admin Routes Integration Tests
+### Phase 8: Admin Routes Integration Tests ✅ COMPLETED
 **Goal**: Test admin-specific functionality
 
 #### Step 8.1: Create `tests/integration/adminRoutes.test.js`
 Test cases:
-- [ ] GET `/api/admin/stats` - Get dashboard statistics
-- [ ] GET `/api/admin/stats` - Fail without admin role
-- [ ] Various admin operations across other routes
+- [x] GET `/api/admin/stats` - Get dashboard statistics
+- [x] GET `/api/admin/stats` - Fail as regular user
+- [x] GET `/api/admin/stats` - Fail without authentication
+- [x] GET `/api/admin/users/:userId/orders` - Get user orders
+- [x] GET `/api/admin/users/:userId/orders` - Return empty for no orders
+- [x] GET `/api/admin/users/:userId/orders` - Fail as regular user
+- [x] GET `/api/admin/users/:userId/reservations` - Get user reservations
+- [x] GET `/api/admin/users/:userId/reservations` - Fail as regular user
+- [x] PATCH `/api/admin/menu/:id/popular` - Toggle popular override on
+- [x] PATCH `/api/admin/menu/:id/popular` - Toggle popular override off
+- [x] PATCH `/api/admin/menu/:id/popular` - Return 404 for non-existent
+- [x] PATCH `/api/admin/menu/:id/popular` - Fail as regular user
+- [x] PATCH `/api/admin/menu/popular/reset` - Reset all overrides
+- [x] PATCH `/api/admin/menu/popular/reset` - Handle no overrides case
+- [x] PATCH `/api/admin/menu/popular/reset` - Fail as regular user
+- [x] GET `/api/admin/menu/popular` - Get popular items status
+- [x] GET `/api/admin/menu/popular` - Fail as regular user
+- [x] PATCH `/api/admin/menu/:id/suggested` - Toggle suggested on
+- [x] PATCH `/api/admin/menu/:id/suggested` - Toggle suggested off
+- [x] PATCH `/api/admin/menu/:id/suggested` - Return 404 for non-existent
+- [x] PATCH `/api/admin/menu/:id/suggested` - Fail as regular user
+- [x] GET `/api/admin/menu/suggested` - Get all suggested items
+- [x] GET `/api/admin/menu/suggested` - Return empty when none suggested
+- [x] GET `/api/admin/menu/suggested` - Fail as regular user
 
-**Validation**: `npm run test:integration -- adminRoutes`
+#### Step 8.2: Test Results
+- **24 admin tests passing**
+- Total: **207 passed, 6 skipped** (8 test suites)
+- adminController coverage: 100%
+
+#### Key Implementation Notes
+- All admin routes require authentication AND admin role
+- Tests cover dashboard stats, user-specific data, and menu management
+- Popular override and suggested item toggle functionality fully tested
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
