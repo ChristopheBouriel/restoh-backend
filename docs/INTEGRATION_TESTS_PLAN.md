@@ -373,17 +373,58 @@ Test cases:
 
 ---
 
-### Phase 9: Contact & Newsletter Routes
+### Phase 9: Contact & Newsletter Routes ✅ COMPLETED
 **Goal**: Test contact form and newsletter
 
 #### Step 9.1: Create `tests/integration/contactRoutes.test.js`
-Test cases:
-- [ ] POST `/api/contact` - Submit contact form
-- [ ] POST `/api/contact` - Fail with invalid email
-- [ ] POST `/api/newsletter/subscribe` - Subscribe to newsletter
-- [ ] POST `/api/newsletter/unsubscribe` - Unsubscribe
+**Contact Routes Test Cases:**
+- [x] POST `/api/contact` - Submit contact form (unauthenticated)
+- [x] POST `/api/contact` - Submit with authenticated user
+- [x] POST `/api/contact` - Fail with invalid email
+- [x] POST `/api/contact` - Fail with missing required fields
+- [x] POST `/api/contact` - Fail with subject too short
+- [x] GET `/api/contact/my-messages` - Get user own messages
+- [x] GET `/api/contact/my-messages` - Fail without authentication
+- [x] PATCH `/api/contact/:id/reply` - Add reply to own message
+- [x] PATCH `/api/contact/:id/reply` - Admin can reply to any message
+- [x] PATCH `/api/contact/:id/reply` - Fail to reply to other user message
+- [x] PATCH `/api/contact/:id/reply` - Return 404 for non-existent
+- [x] GET `/api/contact/admin/messages` - Get all messages (admin)
+- [x] GET `/api/contact/admin/messages` - Filter by status
+- [x] GET `/api/contact/admin/messages` - Paginate messages
+- [x] GET `/api/contact/admin/messages` - Fail as regular user
+- [x] PATCH `/api/contact/admin/messages/:id/status` - Update status
+- [x] PATCH `/api/contact/admin/messages/:id/status` - Fail with invalid status
+- [x] PATCH `/api/contact/admin/messages/:id/status` - Return 404 for non-existent
+- [x] PATCH `/api/contact/admin/messages/:id/status` - Fail as regular user
+- [x] DELETE `/api/contact/admin/messages/:id` - Delete message (admin)
+- [x] DELETE `/api/contact/admin/messages/:id` - Return 404 for non-existent
+- [x] DELETE `/api/contact/admin/messages/:id` - Fail as regular user
 
-**Validation**: `npm run test:integration -- contactRoutes`
+**Newsletter Routes Test Cases:**
+- [x] GET `/api/newsletter/stats` - Get stats (admin)
+- [x] GET `/api/newsletter/stats` - Fail as regular user
+- [x] GET `/api/newsletter/stats` - Fail without authentication
+- [x] GET `/api/newsletter/unsubscribe/newsletter/:userId` - Unsubscribe from newsletter
+- [x] GET `/api/newsletter/unsubscribe/newsletter/:userId` - Return 404 for non-existent
+- [x] GET `/api/newsletter/unsubscribe/promotions/:userId` - Unsubscribe from promotions
+- [x] GET `/api/newsletter/unsubscribe/promotions/:userId` - Return 404 for non-existent
+- [ ] POST `/api/newsletter/send` - Skipped (requires email service mocking)
+- [ ] POST `/api/newsletter/promotion` - Skipped (requires email service mocking)
+
+#### Step 9.2: Test Results
+- **29 contact/newsletter tests passing** (2 skipped for email service)
+- Total: **236 passed, 8 skipped** (9 test suites)
+- contactController coverage: 75%
+- newsletterController coverage: 60%
+
+#### Key Implementation Notes
+- Contact form supports both authenticated and unauthenticated submissions
+- Discussion/reply system with role-based permissions
+- Newsletter unsubscribe routes are public (no auth required)
+- Email send tests skipped - would require mocking emailService.sendBulkEmails
+
+**Validation**: ✅ `npm test` passes
 
 ---
 
