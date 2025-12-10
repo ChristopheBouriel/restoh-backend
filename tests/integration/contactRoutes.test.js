@@ -356,6 +356,165 @@ describe('Contact Routes Integration Tests', () => {
       expect(res.body.success).toBe(false);
     });
   });
+
+  describe('PATCH /api/contact/:id/reply - Validation Errors', () => {
+    let userContact;
+
+    beforeEach(async () => {
+      userContact = await createTestContact({ email: user.email });
+    });
+
+    it('should fail with empty text', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/reply`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ text: '' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail with missing text field', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/reply`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({})
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('PATCH /api/contact/:id/discussion/:discussionId/status', () => {
+    let userContact;
+    let adminReplyId;
+    let userReplyId;
+
+    beforeEach(async () => {
+      // Create contact with discussion messages
+      userContact = await createTestContact({
+        email: user.email,
+        status: 'replied',
+        discussion: [
+          {
+            userId: admin._id,
+            name: admin.name,
+            role: 'admin',
+            text: 'Admin reply to user',
+            date: new Date(),
+            status: 'new'
+          },
+          {
+            userId: user._id,
+            name: user.name,
+            role: 'user',
+            text: 'User follow-up question',
+            date: new Date(),
+            status: 'new'
+          }
+        ]
+      });
+
+      // Get the IDs of the discussion messages
+      const refreshedContact = await Contact.findById(userContact._id);
+      adminReplyId = refreshedContact.discussion[0]._id;
+      userReplyId = refreshedContact.discussion[1]._id;
+    });
+
+    it('should allow user to mark admin message as read', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/discussion/${adminReplyId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'read' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.discussionMessage.status).toBe('read');
+    });
+
+    it('should allow admin to mark user message as read', async () => {
+      // First set contact status to newlyReplied to test status change
+      await Contact.findByIdAndUpdate(userContact._id, { status: 'newlyReplied' });
+
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/discussion/${userReplyId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'read' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.discussionMessage.status).toBe('read');
+      expect(res.body.data.contactStatus).toBe('read');
+    });
+
+    it('should fail when user tries to mark user message as read', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/discussion/${userReplyId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'read' })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('User can only mark admin messages');
+    });
+
+    it('should fail when admin tries to mark admin message as read', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/discussion/${adminReplyId}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'read' })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('Admin can only mark user messages');
+    });
+
+    it('should fail with invalid status value', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/discussion/${adminReplyId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'invalid_status' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail for non-existent contact', async () => {
+      const fakeContactId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .patch(`/api/contact/${fakeContactId}/discussion/${adminReplyId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'read' })
+        .expect(404);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail for non-existent discussion message', async () => {
+      const fakeDiscussionId = new mongoose.Types.ObjectId();
+      const res = await request(app)
+        .patch(`/api/contact/${userContact._id}/discussion/${fakeDiscussionId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'read' })
+        .expect(404);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('Discussion message not found');
+    });
+
+    it('should fail when user tries to access other user contact', async () => {
+      const otherContact = await createTestContact({ email: 'other@example.com' });
+
+      const res = await request(app)
+        .patch(`/api/contact/${otherContact._id}/discussion/${adminReplyId}/status`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ status: 'read' })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.error).toContain('only access your own');
+    });
+  });
 });
 
 describe('Newsletter Routes Integration Tests', () => {

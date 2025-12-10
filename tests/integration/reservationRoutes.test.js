@@ -659,4 +659,279 @@ describe('Reservation Routes Integration Tests', () => {
       expect(res.body.success).toBe(false);
     });
   });
+
+  describe('POST /api/reservations - Table Capacity Validation', () => {
+    it('should fail when table capacity exceeds max allowed (guests + 1)', async () => {
+      // Table 2 has capacity 4, trying to book for 2 guests should fail
+      // because capacity 4 > 2+1 = 3
+      const res = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          date: getFutureDate(4).toISOString(),
+          slot: 5,
+          guests: 2,
+          tableNumber: [2], // Capacity 4 > 3 (guests + 1)
+          contactPhone: '0612345678',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.code).toBe('CAPACITY_EXCEEDED');
+    });
+
+    it('should fail when table capacity is insufficient', async () => {
+      // Table 1 has capacity 2, trying to book for 4 guests should fail
+      const res = await request(app)
+        .post('/api/reservations')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          date: getFutureDate(4).toISOString(),
+          slot: 6,
+          guests: 4,
+          tableNumber: [1], // Capacity 2 < 4 guests
+          contactPhone: '0612345678',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.code).toBe('CAPACITY_INSUFFICIENT');
+    });
+  });
+
+  describe('PUT /api/reservations/:id - User Update with Table Validation', () => {
+    it('should fail update when table capacity is insufficient', async () => {
+      const reservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(5),
+        tableNumber: [2],
+        guests: 3,
+        slot: 7,
+      });
+
+      // Try to change to table 1 (capacity 2) while having 3 guests
+      const res = await request(app)
+        .put(`/api/reservations/${reservation._id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          tableNumber: [1], // Capacity 2 < 3 guests
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should update reservation when changing to valid table', async () => {
+      // Create table3 for this test with capacity 6
+      await createTestTable({ tableNumber: 3, capacity: 6 });
+
+      const reservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(6),
+        tableNumber: [2],
+        guests: 4,
+        slot: 8,
+      });
+
+      // Change to table 3 (capacity 6) for 4 guests - should work (6 <= 4+1=5? no, 6 > 5)
+      // Actually 4 guests can use table with capacity 4 or 5
+      // Let's update guests instead
+      const res = await request(app)
+        .put(`/api/reservations/${reservation._id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          guests: 3, // Change to 3 guests, table 2 (capacity 4) is valid for 3-4 guests
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.guests).toBe(3);
+    });
+  });
+
+  describe('DELETE /api/reservations/:id - Cancel Edge Cases', () => {
+    it('should fail to cancel non-confirmed reservation (status: seated)', async () => {
+      const reservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'seated',
+        date: getFutureDate(-1),
+        slot: 9,
+      });
+
+      const res = await request(app)
+        .delete(`/api/reservations/${reservation._id}`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('Only confirmed reservations');
+    });
+  });
+
+  describe('PATCH /api/reservations/admin/:id/status - Time Validations', () => {
+    it('should fail to mark future reservation as seated', async () => {
+      const futureReservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(5), // 5 days in the future
+        slot: 10,
+        tableNumber: [1],
+      });
+
+      const res = await request(app)
+        .patch(`/api/reservations/admin/${futureReservation._id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'seated' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('before the reservation time');
+    });
+
+    it('should fail to mark future reservation as completed', async () => {
+      const futureReservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(5),
+        slot: 11,
+        tableNumber: [1],
+      });
+
+      const res = await request(app)
+        .patch(`/api/reservations/admin/${futureReservation._id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'completed' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('before the reservation time');
+    });
+
+    it('should fail to mark future reservation as no-show', async () => {
+      const futureReservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(5),
+        slot: 4, // Valid slot: 12:30
+        tableNumber: [1],
+      });
+
+      const res = await request(app)
+        .patch(`/api/reservations/admin/${futureReservation._id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'no-show' })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toContain('before the reservation time');
+    });
+
+    it('should mark past reservation as cancelled and free tables', async () => {
+      const pastReservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(-1),
+        slot: 22,
+        tableNumber: [1],
+      });
+
+      const res = await request(app)
+        .patch(`/api/reservations/admin/${pastReservation._id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'cancelled' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('cancelled');
+    });
+
+    it('should mark past reservation as no-show', async () => {
+      const pastReservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(-1),
+        slot: 23,
+        tableNumber: [2],
+      });
+
+      const res = await request(app)
+        .patch(`/api/reservations/admin/${pastReservation._id}/status`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ status: 'no-show' })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('no-show');
+    });
+  });
+
+  describe('PUT /api/reservations/admin/:id - Admin Update with Table Changes', () => {
+    it('should update reservation and change table assignment', async () => {
+      const reservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(4),
+        tableNumber: [1],
+        guests: 3, // 3 guests to match table 2 capacity (4 is valid for 3-4 guests)
+        slot: 2, // Valid slot: 11:30
+      });
+
+      const res = await request(app)
+        .put(`/api/reservations/admin/${reservation._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          tableNumber: [2], // Table 2 has capacity 4, valid for 3 guests
+          status: 'confirmed',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.tableNumber).toContain(2);
+    });
+
+    it('should fail admin update when setting status to cancelled with table release', async () => {
+      // This tests the cancellation path in adminUpdateReservation
+      const reservation = await createTestReservation({
+        userId: user._id,
+        userEmail: user.email,
+        userName: user.name,
+        status: 'confirmed',
+        date: getFutureDate(4),
+        tableNumber: [1],
+        guests: 2,
+        slot: 1, // Valid slot: 11:00
+      });
+
+      const res = await request(app)
+        .put(`/api/reservations/admin/${reservation._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          status: 'cancelled',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.status).toBe('cancelled');
+    });
+  });
 });

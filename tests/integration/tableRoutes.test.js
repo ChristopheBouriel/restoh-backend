@@ -321,4 +321,10 @@ describe('Table Routes Integration Tests', () => {
       expect(res.body.success).toBe(false);
     });
   });
+
+  // Note: POST /api/tables/:id/bookings and DELETE /api/tables/:id/bookings
+  // are intentionally disabled in the routes file (commented out).
+  // These functions are used internally by reservationController.
+  // The addBookingToTable and removeBookingFromTable functions are tested
+  // indirectly through reservation tests.
 });
