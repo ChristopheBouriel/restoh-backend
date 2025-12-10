@@ -480,18 +480,179 @@ describe('Newsletter Routes Integration Tests', () => {
     });
   });
 
-  // Note: POST /api/newsletter/send and POST /api/newsletter/promotion
-  // are skipped because they require email service mocking
-  // These tests would need proper mocking of emailService.sendBulkEmails
-  describe.skip('POST /api/newsletter/send', () => {
-    it('should send newsletter to subscribers', async () => {
-      // Would need to mock emailService
+  describe('POST /api/newsletter/send', () => {
+    const emailService = require('../../services/email/emailService');
+
+    beforeEach(async () => {
+      // Create subscribers for newsletter
+      await createTestUser({
+        email: 'newsletter1@example.com',
+        isEmailVerified: true,
+        isActive: true,
+        notifications: { newsletter: true, promotions: false },
+      });
+      await createTestUser({
+        email: 'newsletter2@example.com',
+        isEmailVerified: true,
+        isActive: true,
+        notifications: { newsletter: true, promotions: false },
+      });
+      // Reset mock
+      emailService.sendBulkEmails.mockClear();
+      emailService.sendBulkEmails.mockResolvedValue({ success: 2, failed: 0, errors: [] });
+    });
+
+    it('should send newsletter to subscribers as admin', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/send')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          subject: 'Weekly Newsletter',
+          content: 'Here are the latest updates from RestOh!',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('Newsletter sent');
+      expect(res.body.data.totalSubscribers).toBeGreaterThanOrEqual(2);
+      expect(emailService.sendBulkEmails).toHaveBeenCalled();
+    });
+
+    it('should fail without authentication', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/send')
+        .send({
+          subject: 'Newsletter',
+          content: 'Content',
+        })
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail as regular user', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/send')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          subject: 'Newsletter',
+          content: 'Content',
+        })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail with missing subject', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/send')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          content: 'Content only',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail with missing content', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/send')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          subject: 'Subject only',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
     });
   });
 
-  describe.skip('POST /api/newsletter/promotion', () => {
-    it('should send promotion to subscribers', async () => {
-      // Would need to mock emailService
+  describe('POST /api/newsletter/promotion', () => {
+    const emailService = require('../../services/email/emailService');
+
+    beforeEach(async () => {
+      // Create subscribers for promotions
+      await createTestUser({
+        email: 'promo1@example.com',
+        isEmailVerified: true,
+        isActive: true,
+        notifications: { newsletter: false, promotions: true },
+      });
+      await createTestUser({
+        email: 'promo2@example.com',
+        isEmailVerified: true,
+        isActive: true,
+        notifications: { newsletter: false, promotions: true },
+      });
+      // Reset mock
+      emailService.sendBulkEmails.mockClear();
+      emailService.sendBulkEmails.mockResolvedValue({ success: 2, failed: 0, errors: [] });
+    });
+
+    it('should send promotion to subscribers as admin', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/promotion')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          subject: 'Special Offer!',
+          promotionContent: '50% off all desserts this weekend!',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('Promotion email sent');
+      expect(res.body.data.totalSubscribers).toBeGreaterThanOrEqual(2);
+      expect(emailService.sendBulkEmails).toHaveBeenCalled();
+    });
+
+    it('should fail without authentication', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/promotion')
+        .send({
+          subject: 'Promo',
+          promotionContent: 'Content',
+        })
+        .expect(401);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail as regular user', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/promotion')
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({
+          subject: 'Promo',
+          promotionContent: 'Content',
+        })
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail with missing subject', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/promotion')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          promotionContent: 'Content only',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail with missing promotionContent', async () => {
+      const res = await request(app)
+        .post('/api/newsletter/promotion')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          subject: 'Subject only',
+        })
+        .expect(400);
+
+      expect(res.body.success).toBe(false);
     });
   });
 });

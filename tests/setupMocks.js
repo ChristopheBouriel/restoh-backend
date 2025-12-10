@@ -4,6 +4,7 @@
  *
  * Mocks external services that would cause tests to hang or fail:
  * - cloudinaryUpload: Multer middleware that waits for file uploads
+ * - emailService: Brevo email service that would send real emails
  */
 
 // Mock cloudinaryUpload middleware globally
@@ -19,4 +20,15 @@ jest.mock('../middleware/cloudinaryUpload', () => ({
     },
     url: jest.fn((publicId) => `https://cloudinary.com/${publicId}`),
   },
+}));
+
+// Mock emailService globally to prevent sending real emails
+jest.mock('../services/email/emailService', () => ({
+  sendEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'mock-id' }),
+  sendVerificationEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'mock-id' }),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'mock-id' }),
+  sendNewsletterEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'mock-id' }),
+  sendPromotionEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'mock-id' }),
+  sendBulkEmails: jest.fn().mockResolvedValue({ success: 0, failed: 0, errors: [] }),
+  loadTemplate: jest.fn().mockReturnValue('<html>Mock template</html>'),
 }));
