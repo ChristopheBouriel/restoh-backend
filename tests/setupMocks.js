@@ -32,3 +32,24 @@ jest.mock('../services/email/emailService', () => ({
   sendBulkEmails: jest.fn().mockResolvedValue({ success: 0, failed: 0, errors: [] }),
   loadTemplate: jest.fn().mockReturnValue('<html>Mock template</html>'),
 }));
+
+// Mock Stripe globally to prevent real API calls
+jest.mock('stripe', () => {
+  return jest.fn().mockImplementation(() => ({
+    paymentIntents: {
+      create: jest.fn().mockResolvedValue({
+        id: 'pi_test_123',
+        client_secret: 'pi_test_123_secret_abc',
+        amount: 2500,
+        currency: 'usd',
+        status: 'requires_payment_method',
+      }),
+      retrieve: jest.fn().mockResolvedValue({
+        id: 'pi_test_123',
+        amount: 2500,
+        currency: 'usd',
+        status: 'succeeded',
+      }),
+    },
+  }));
+});
