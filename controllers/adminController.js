@@ -1,15 +1,18 @@
 const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const { createMenuItemNotFoundError } = require('../utils/errorHelpers');
+const { getDashboardStats: getStats } = require('../utils/dashboardStatsHelper');
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
 // @access  Private/Admin
 const getDashboardStats = asyncHandler(async (req, res) => {
+  // Get menu stats
   const totalMenuItems = await MenuItem.countDocuments();
   const activeMenuItems = await MenuItem.countDocuments({ isAvailable: true });
-  const categories = await MenuItem.distinct('category');
-  const cuisines = await MenuItem.distinct('cuisine');
+
+  // Get orders and reservations stats
+  const stats = await getStats();
 
   res.status(200).json({
     success: true,
@@ -17,10 +20,9 @@ const getDashboardStats = asyncHandler(async (req, res) => {
       totalMenuItems,
       activeMenuItems,
       inactiveMenuItems: totalMenuItems - activeMenuItems,
-      totalCategories: categories.length,
-      totalCuisines: cuisines.length,
-      categories,
-      cuisines,
+      orders: stats.orders,
+      reservations: stats.reservations,
+      revenue: stats.revenue
     },
   });
 });
