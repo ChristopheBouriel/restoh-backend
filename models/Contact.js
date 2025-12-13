@@ -72,7 +72,21 @@ const ContactSchema = new mongoose.Schema({
       enum: ['new', 'read'],
       default: 'new'
     }
-  }]
+  }],
+  // Soft delete fields - existing documents will have isDeleted: undefined (treated as false)
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
+  deletedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true,
   toJSON: {

@@ -9,6 +9,9 @@ const {
   createValidationError
 } = require('../utils/errorHelpers');
 
+// Filter condition to exclude soft-deleted documents
+const notDeleted = { isDeleted: false };
+
 // @desc    Submit contact form
 // @route   POST /api/contact
 // @access  Public
@@ -66,7 +69,7 @@ const submitContactForm = asyncHandler(async (req, res) => {
 // @route   GET /api/contact/my-messages
 // @access  Private
 const getUserContactMessages = asyncHandler(async (req, res) => {
-  const messages = await Contact.find({ email: req.user.email })
+  const messages = await Contact.find({ email: req.user.email, ...notDeleted })
     .sort({ createdAt: -1 });
 
   res.status(200).json({
@@ -84,7 +87,8 @@ const getContactMessages = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit, 10) || 10;
   const startIndex = (page - 1) * limit;
 
-  let query = {};
+  // Base query excludes soft-deleted
+  let query = { ...notDeleted };
 
   // Filter by status if provided
   if (req.query.status) {
@@ -138,8 +142,8 @@ const updateContactMessageStatus = asyncHandler(async (req, res) => {
 
   const { status } = req.body;
 
-  // Find the contact message
-  const message = await Contact.findById(req.params.id);
+  // Find the contact message (exclude soft-deleted)
+  const message = await Contact.findOne({ _id: req.params.id, ...notDeleted });
 
   if (!message) {
     const errorResponse = createContactMessageNotFoundError(req.params.id);
@@ -173,8 +177,8 @@ const addReplyToDiscussion = asyncHandler(async (req, res) => {
 
   const { text } = req.body;
 
-  // Find the contact message
-  const message = await Contact.findById(req.params.id);
+  // Find the contact message (exclude soft-deleted)
+  const message = await Contact.findOne({ _id: req.params.id, ...notDeleted });
 
   if (!message) {
     const errorResponse = createContactMessageNotFoundError(req.params.id);
@@ -237,8 +241,8 @@ const markDiscussionMessageAsRead = asyncHandler(async (req, res) => {
     return res.status(400).json(errorResponse);
   }
 
-  // Find the contact message
-  const message = await Contact.findById(req.params.id);
+  // Find the contact message (exclude soft-deleted)
+  const message = await Contact.findOne({ _id: req.params.id, ...notDeleted });
 
   if (!message) {
     const errorResponse = createContactMessageNotFoundError(req.params.id);
@@ -306,22 +310,93 @@ const markDiscussionMessageAsRead = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Delete contact message (Admin only)
+// @desc    Soft delete contact message (Admin only)
 // @route   DELETE /api/contact/admin/messages/:id
 // @access  Private/Admin
 const deleteContactMessage = asyncHandler(async (req, res) => {
-  const message = await Contact.findById(req.params.id);
+  const message = await Contact.findOne({
+    _id: req.params.id,
+    isDeleted: false
+  });
 
   if (!message) {
     const errorResponse = createContactMessageNotFoundError(req.params.id);
     return res.status(404).json(errorResponse);
   }
 
-  await message.deleteOne();
+  // Soft delete with audit trail
+  message.isDeleted = true;
+  message.deletedBy = req.user._id;
+  message.deletedAt = new Date();
+  await message.save();
 
   res.status(200).json({
     success: true,
-    message: 'Contact message deleted successfully',
+    message: 'Contact message archived successfully',
+  });
+});
+
+// @desc    Get deleted contact messages (Admin only)
+// @route   GET /api/contact/admin/messages/deleted
+// @access  Private/Admin
+const getDeletedMessages = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const startIndex = (page - 1) * limit;
+
+  const query = { isDeleted: true };
+
+  const total = await Contact.countDocuments(query);
+  const messages = await Contact.find(query)
+    .populate('deletedBy', 'firstName lastName email')
+    .sort({ deletedAt: -1 })
+    .limit(limit)
+    .skip(startIndex);
+
+  const pagination = {};
+  if (startIndex + limit < total) {
+    pagination.next = { page: page + 1, limit };
+  }
+  if (startIndex > 0) {
+    pagination.prev = { page: page - 1, limit };
+  }
+
+  res.status(200).json({
+    success: true,
+    count: messages.length,
+    total,
+    pagination,
+    data: messages,
+  });
+});
+
+// @desc    Restore deleted contact message (Admin only)
+// @route   PATCH /api/contact/admin/messages/:id/restore
+// @access  Private/Admin
+const restoreContactMessage = asyncHandler(async (req, res) => {
+  const message = await Contact.findOne({
+    _id: req.params.id,
+    isDeleted: true
+  });
+
+  if (!message) {
+    return res.status(404).json({
+      success: false,
+      error: 'Deleted message not found',
+      code: 'MESSAGE_NOT_FOUND'
+    });
+  }
+
+  // Restore the message
+  message.isDeleted = false;
+  message.deletedBy = null;
+  message.deletedAt = null;
+  await message.save();
+
+  res.status(200).json({
+    success: true,
+    message: 'Contact message restored successfully',
+    data: message,
   });
 });
 
@@ -333,4 +408,6 @@ module.exports = {
   addReplyToDiscussion,
   markDiscussionMessageAsRead,
   deleteContactMessage,
+  getDeletedMessages,
+  restoreContactMessage,
 };

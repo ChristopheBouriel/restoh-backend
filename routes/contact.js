@@ -7,6 +7,8 @@ const {
   addReplyToDiscussion,
   markDiscussionMessageAsRead,
   deleteContactMessage,
+  getDeletedMessages,
+  restoreContactMessage,
 } = require('../controllers/contactController');
 const { protect, optionalAuth, authorize } = require('../middleware/auth');
 const { contactLimiter } = require('../middleware/rateLimiter');
@@ -23,7 +25,9 @@ router.patch('/:id/discussion/:discussionId/status', protect, markDiscussionMess
 
 // Admin routes - require authentication and admin role
 router.get('/admin/messages', protect, authorize('admin'), getContactMessages);
+router.get('/admin/messages/deleted', protect, authorize('admin'), getDeletedMessages);
 router.patch('/admin/messages/:id/status', protect, authorize('admin'), updateContactMessageStatus);
+router.patch('/admin/messages/:id/restore', protect, authorize('admin'), restoreContactMessage);
 router.delete('/admin/messages/:id', protect, authorize('admin'), deleteContactMessage);
 
 module.exports = router;

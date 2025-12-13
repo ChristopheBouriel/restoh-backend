@@ -8,7 +8,7 @@
 
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Critical | 4     | 1     | 3         |
+| Critical | 4     | 2     | 2         |
 | High     | 5     | 0     | 5         |
 | Medium   | 8     | 0     | 8         |
 
@@ -48,42 +48,37 @@ Multi-level rate limiting strategy with environment-aware limits:
 
 ---
 
-### 2. [ ] IDOR Vulnerability in Contact Messages
+### 2. [x] IDOR Vulnerability in Contact Messages ✅ FIXED
 
-**Location**: `controllers/contactController.js:57-72`
+**Location**: `controllers/contactController.js`, `models/Contact.js`
 
-**Issue**: Admin can delete any contact message by ID without validation. While admin-only, a compromised admin account or privilege escalation could allow data destruction.
+**Issue**: Admin could hard delete any contact message, destroying data permanently with no audit trail.
 
 **Risk**: Mass deletion of contact messages, audit trail destruction.
 
-**Fix**:
+**Solution Implemented** (December 13, 2025):
+
+Soft delete with audit trail and restore capability:
+
+**Schema changes** (`models/Contact.js`):
 ```javascript
-// Add soft delete instead of hard delete
-const deleteMessage = asyncHandler(async (req, res) => {
-  const message = await Contact.findById(req.params.id);
-
-  if (!message) {
-    return res.status(404).json({
-      success: false,
-      error: 'Message not found',
-      code: 'MESSAGE_NOT_FOUND'
-    });
-  }
-
-  // Soft delete with audit trail
-  message.isDeleted = true;
-  message.deletedBy = req.user._id;
-  message.deletedAt = new Date();
-  await message.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Contact message archived successfully'
-  });
-});
+isDeleted: { type: Boolean, default: false },
+deletedBy: { type: ObjectId, ref: 'User', default: null },
+deletedAt: { type: Date, default: null }
 ```
 
-**Also required**: Add `isDeleted`, `deletedBy`, `deletedAt` fields to Contact model.
+**New endpoints**:
+- `GET /api/contact/admin/messages/deleted` - View archived messages
+- `PATCH /api/contact/admin/messages/:id/restore` - Restore archived messages
+
+**Behavior changes**:
+- `DELETE /api/contact/admin/messages/:id` now soft deletes (archives)
+- All queries exclude soft-deleted documents
+- Deleted messages retain full audit trail (who deleted, when)
+
+**Database migration**: Existing documents updated with `isDeleted: false`
+
+**Tests**: 8 new tests covering soft delete, restore, and exclusion from queries
 
 ---
 
@@ -686,7 +681,7 @@ const status = ['pending', 'confirmed', 'completed', 'cancelled'].includes(req.q
 1. ~~Enable rate limiting in all environments~~ ✅ DONE
 2. Fix ObjectId comparison bug
 3. Secure Stripe key configuration
-4. Implement soft delete for contact messages
+4. ~~Implement soft delete for contact messages~~ ✅ DONE
 
 ### Phase 2: High (Week 2-3)
 5. Add account lockout mechanism
@@ -733,3 +728,4 @@ After implementing each fix:
 |------|---------|--------|-------|
 | 2025-12-13 | All | Identified | Initial OWASP audit completed |
 | 2025-12-13 | #1 | Fixed | Multi-level rate limiting implemented |
+| 2025-12-13 | #2 | Fixed | Soft delete with audit trail for contact messages |

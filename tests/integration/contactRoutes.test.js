@@ -324,17 +324,21 @@ describe('Contact Routes Integration Tests', () => {
       contact = await createTestContact();
     });
 
-    it('should delete contact message as admin', async () => {
+    it('should soft delete contact message as admin', async () => {
       const res = await request(app)
         .delete(`/api/contact/admin/messages/${contact._id}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('archived');
 
-      // Verify deletion
+      // Verify soft deletion (document still exists but marked as deleted)
       const deleted = await Contact.findById(contact._id);
-      expect(deleted).toBeNull();
+      expect(deleted).not.toBeNull();
+      expect(deleted.isDeleted).toBe(true);
+      expect(deleted.deletedBy.toString()).toBe(admin._id.toString());
+      expect(deleted.deletedAt).toBeInstanceOf(Date);
     });
 
     it('should return 404 for non-existent contact', async () => {
@@ -354,6 +358,144 @@ describe('Contact Routes Integration Tests', () => {
         .expect(403);
 
       expect(res.body.success).toBe(false);
+    });
+
+    it('should return 404 when trying to delete already deleted contact', async () => {
+      // First delete
+      await request(app)
+        .delete(`/api/contact/admin/messages/${contact._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      // Try to delete again
+      const res = await request(app)
+        .delete(`/api/contact/admin/messages/${contact._id}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('GET /api/contact/admin/messages/deleted', () => {
+    beforeEach(async () => {
+      // Create some contacts and soft delete some
+      const contact1 = await createTestContact({ subject: 'active1' });
+      const contact2 = await createTestContact({ subject: 'deleted1' });
+      const contact3 = await createTestContact({ subject: 'deleted2' });
+
+      // Soft delete contact2 and contact3
+      await Contact.updateOne(
+        { _id: contact2._id },
+        { isDeleted: true, deletedBy: admin._id, deletedAt: new Date() }
+      );
+      await Contact.updateOne(
+        { _id: contact3._id },
+        { isDeleted: true, deletedBy: admin._id, deletedAt: new Date() }
+      );
+    });
+
+    it('should get deleted messages as admin', async () => {
+      const res = await request(app)
+        .get('/api/contact/admin/messages/deleted')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.count).toBe(2);
+      expect(res.body.data.every(m => m.isDeleted === true)).toBe(true);
+    });
+
+    it('should fail as regular user', async () => {
+      const res = await request(app)
+        .get('/api/contact/admin/messages/deleted')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('PATCH /api/contact/admin/messages/:id/restore', () => {
+    let deletedContact;
+
+    beforeEach(async () => {
+      deletedContact = await createTestContact({ subject: 'to-restore' });
+      await Contact.updateOne(
+        { _id: deletedContact._id },
+        { isDeleted: true, deletedBy: admin._id, deletedAt: new Date() }
+      );
+    });
+
+    it('should restore deleted message as admin', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/admin/messages/${deletedContact._id}/restore`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.message).toContain('restored');
+
+      // Verify restoration
+      const restored = await Contact.findById(deletedContact._id);
+      expect(restored.isDeleted).toBe(false);
+      expect(restored.deletedBy).toBeNull();
+      expect(restored.deletedAt).toBeNull();
+    });
+
+    it('should return 404 for non-deleted message', async () => {
+      // Create a non-deleted contact
+      const activeContact = await createTestContact({ subject: 'active' });
+
+      const res = await request(app)
+        .patch(`/api/contact/admin/messages/${activeContact._id}/restore`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(404);
+
+      expect(res.body.success).toBe(false);
+    });
+
+    it('should fail as regular user', async () => {
+      const res = await request(app)
+        .patch(`/api/contact/admin/messages/${deletedContact._id}/restore`)
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(403);
+
+      expect(res.body.success).toBe(false);
+    });
+  });
+
+  describe('Soft delete excludes from normal queries', () => {
+    beforeEach(async () => {
+      // Create contacts - one active, one deleted
+      await createTestContact({ email: user.email, subject: 'active-user' });
+      const deletedContact = await createTestContact({ email: user.email, subject: 'deleted-user' });
+      await Contact.updateOne(
+        { _id: deletedContact._id },
+        { isDeleted: true, deletedBy: admin._id, deletedAt: new Date() }
+      );
+    });
+
+    it('should not return deleted messages in user messages', async () => {
+      const res = await request(app)
+        .get('/api/contact/my-messages')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      expect(res.body.count).toBe(1);
+      expect(res.body.data[0].subject).toBe('active-user');
+    });
+
+    it('should not return deleted messages in admin list', async () => {
+      const res = await request(app)
+        .get('/api/contact/admin/messages')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+      // Should only show active messages
+      expect(res.body.data.every(m => m.isDeleted === false)).toBe(true);
     });
   });
 
