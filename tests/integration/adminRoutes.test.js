@@ -88,6 +88,13 @@ describe('Admin Routes Integration Tests', () => {
       expect(res.body.data.activeMenuItems).toBeGreaterThanOrEqual(2);
       expect(res.body.data.inactiveMenuItems).toBeGreaterThanOrEqual(1);
 
+      // Quick stats for dashboard cards
+      expect(res.body.data.quickStats).toBeDefined();
+      expect(typeof res.body.data.quickStats.todayRevenue).toBe('number');
+      expect(typeof res.body.data.quickStats.todayOrders).toBe('number');
+      expect(typeof res.body.data.quickStats.todayReservations).toBe('number');
+      expect(typeof res.body.data.quickStats.totalActiveUsers).toBe('number');
+
       // Orders stats structure
       expect(res.body.data.orders).toBeDefined();
       expect(res.body.data.orders.thisMonth).toBeDefined();

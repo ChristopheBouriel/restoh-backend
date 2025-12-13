@@ -26,6 +26,12 @@ Authorization: Bearer <admin_token>
     "totalMenuItems": 15,
     "activeMenuItems": 12,
     "inactiveMenuItems": 3,
+    "quickStats": {
+      "todayRevenue": 125.00,
+      "todayOrders": 5,
+      "todayReservations": 3,
+      "totalActiveUsers": 150
+    },
     "orders": {
       "thisMonth": {
         "total": 45,
@@ -89,6 +95,19 @@ Authorization: Bearer <admin_token>
 | `totalMenuItems` | number | Total number of menu items in the database |
 | `activeMenuItems` | number | Number of menu items with `isAvailable: true` |
 | `inactiveMenuItems` | number | Number of menu items with `isAvailable: false` |
+
+### Quick Stats (Dashboard Cards)
+
+The `quickStats` object provides ready-to-use metrics for dashboard cards, eliminating the need for frontend calculations:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `todayRevenue` | number | Total revenue from orders today |
+| `todayOrders` | number | Total number of orders today |
+| `todayReservations` | number | Total number of reservations today |
+| `totalActiveUsers` | number | Count of all active users (isActive: true) |
+
+**Note**: These values are duplicates of data in other sections but provided at the top level for quick access by dashboard card components.
 
 ### Orders Statistics
 
@@ -160,10 +179,18 @@ interface ReservationStats {
   totalGuests: number;
 }
 
+interface QuickStats {
+  todayRevenue: number;
+  todayOrders: number;
+  todayReservations: number;
+  totalActiveUsers: number;
+}
+
 interface DashboardStats {
   totalMenuItems: number;
   activeMenuItems: number;
   inactiveMenuItems: number;
+  quickStats: QuickStats;
   orders: {
     thisMonth: OrderStats;
     lastMonth: OrderStats;

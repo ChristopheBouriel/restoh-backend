@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const Reservation = require('../models/Reservation');
+const User = require('../models/User');
 
 /**
  * Get date boundaries for statistics calculations
@@ -95,6 +96,14 @@ const getReservationStats = async (startDate, endDate = new Date()) => {
 };
 
 /**
+ * Get total active users count
+ * @returns {number} Count of all active users (isActive: true)
+ */
+const getActiveUsersCount = async () => {
+  return await User.countDocuments({ isActive: true });
+};
+
+/**
  * Get all dashboard statistics
  * @returns {Object} Complete dashboard statistics
  */
@@ -110,7 +119,8 @@ const getDashboardStats = async () => {
     reservationsThisMonth,
     reservationsLastMonth,
     reservationsToday,
-    reservationsSameDayLastWeek
+    reservationsSameDayLastWeek,
+    activeUsers
   ] = await Promise.all([
     getOrderStats(dates.thisMonthStart),
     getOrderStats(dates.lastMonthStart, dates.lastMonthEnd),
@@ -119,10 +129,18 @@ const getDashboardStats = async () => {
     getReservationStats(dates.thisMonthStart),
     getReservationStats(dates.lastMonthStart, dates.lastMonthEnd),
     getReservationStats(dates.todayStart, dates.todayEnd),
-    getReservationStats(dates.sameDayLastWeekStart, dates.sameDayLastWeekEnd)
+    getReservationStats(dates.sameDayLastWeekStart, dates.sameDayLastWeekEnd),
+    getActiveUsersCount()
   ]);
 
   return {
+    // Quick stats for dashboard cards (today's metrics + total users)
+    quickStats: {
+      todayRevenue: ordersToday.revenue,
+      todayOrders: ordersToday.total,
+      todayReservations: reservationsToday.total,
+      totalActiveUsers: activeUsers
+    },
     orders: {
       thisMonth: {
         total: ordersThisMonth.total,

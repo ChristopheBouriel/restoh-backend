@@ -20,6 +20,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
       totalMenuItems,
       activeMenuItems,
       inactiveMenuItems: totalMenuItems - activeMenuItems,
+      quickStats: stats.quickStats,
       orders: stats.orders,
       reservations: stats.reservations,
       revenue: stats.revenue
