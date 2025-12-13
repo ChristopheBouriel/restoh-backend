@@ -9,12 +9,13 @@ const {
   deleteAccount,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
+const { strictLimiter, authLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
+// Public routes with strict rate limiting
+router.post('/register', strictLimiter, register);
+router.post('/login', authLimiter, login);
 
 // Protected routes
 router.use(protect); // All routes after this middleware are protected

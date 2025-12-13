@@ -2,11 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
+const { standardLimiter } = require('./middleware/rateLimiter');
 
 // Load environment variables
 dotenv.config();
@@ -27,13 +27,8 @@ app.use(helmet({
   },
 }));
 
-// Rate limiting - Disabled for development
-// const limiter = rateLimit({
-//   windowMs: 15 * 60 * 1000, // 15 minutes
-//   max: 100, // limit each IP to 100 requests per windowMs
-//   message: 'Too many requests from this IP, please try again later.',
-// });
-// app.use('/api/', limiter);
+// Global rate limiting - Active in all environments (relaxed in development)
+app.use('/api/', standardLimiter);
 
 // CORS configuration - Allow multiple frontend URLs
 const allowedOrigins = [

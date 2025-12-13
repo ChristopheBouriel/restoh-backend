@@ -10,12 +10,14 @@ const {
 const { getAdminUserOrders } = require('../controllers/orderController');
 const { getAdminUserReservations } = require('../controllers/reservationController');
 const { protect, authorize } = require('../middleware/auth');
+const { moderateLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-// All admin routes are protected
+// All admin routes are protected with moderate rate limiting
 router.use(protect);
 router.use(authorize('admin'));
+router.use(moderateLimiter);
 
 router.get('/stats', getDashboardStats);
 

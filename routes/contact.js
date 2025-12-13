@@ -9,11 +9,12 @@ const {
   deleteContactMessage,
 } = require('../controllers/contactController');
 const { protect, optionalAuth, authorize } = require('../middleware/auth');
+const { contactLimiter } = require('../middleware/rateLimiter');
 
 const router = express.Router();
 
-// Public route - anyone can submit contact form (optionalAuth captures userId if authenticated)
-router.post('/', optionalAuth, submitContactForm);
+// Public route - anyone can submit contact form with spam protection
+router.post('/', contactLimiter, optionalAuth, submitContactForm);
 
 // Protected routes - authenticated users
 router.get('/my-messages', protect, getUserContactMessages);
