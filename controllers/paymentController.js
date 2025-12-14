@@ -8,14 +8,35 @@ const {
   createPaymentConfirmationFailedError
 } = require('../utils/errorHelpers');
 
-// Initialize payment gateway
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_demo_key'); // Demo key
+// Initialize payment gateway with environment validation
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+// Fail fast in production if Stripe key is missing
+if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
+  console.error('FATAL: STRIPE_SECRET_KEY is required in production');
+  process.exit(1);
+}
+
+// Warn in development if using without key
+if (!stripeSecretKey) {
+  console.warn('⚠️  STRIPE_SECRET_KEY not set - payment endpoints will fail');
+}
+
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 
 
 // @desc    Create Stripe payment intent
 // @route   POST /api/payments/stripe/create-intent
 // @access  Private
 const createStripePaymentIntent = asyncHandler(async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({
+      success: false,
+      error: 'Payment service unavailable - Stripe not configured',
+      code: 'PAYMENT_SERVICE_UNAVAILABLE'
+    });
+  }
+
   const { amount, currency = 'usd' } = req.body;
 
   if (!amount || amount <= 0) {
@@ -50,6 +71,14 @@ const createStripePaymentIntent = asyncHandler(async (req, res) => {
 // @route   POST /api/payments/stripe/confirm
 // @access  Private
 const confirmStripePayment = asyncHandler(async (req, res) => {
+  if (!stripe) {
+    return res.status(503).json({
+      success: false,
+      error: 'Payment service unavailable - Stripe not configured',
+      code: 'PAYMENT_SERVICE_UNAVAILABLE'
+    });
+  }
+
   const { paymentIntentId } = req.body;
 
   if (!paymentIntentId) {

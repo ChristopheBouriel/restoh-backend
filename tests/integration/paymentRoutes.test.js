@@ -1,3 +1,6 @@
+// Set test Stripe key before loading controller
+process.env.STRIPE_SECRET_KEY = 'sk_test_mock_key_for_testing';
+
 const request = require('supertest');
 const express = require('express');
 const cookieParser = require('cookie-parser');

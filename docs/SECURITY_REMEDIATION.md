@@ -8,7 +8,7 @@
 
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Critical | 4     | 3     | 1         |
+| Critical | 4     | 4     | 0         |
 | High     | 5     | 0     | 5         |
 | Medium   | 8     | 0     | 8         |
 
@@ -115,31 +115,37 @@ if (!review.user.id.equals(req.user._id)) { ... }
 
 ---
 
-### 4. [ ] Stripe Demo Key Fallback in Production
+### 4. [x] Stripe Demo Key Fallback in Production ✅ FIXED
 
-**Location**: `server.js:28-35`
+**Location**: `controllers/paymentController.js:11-25`
 
-**Issue**: If `STRIPE_SECRET_KEY` is not set, the app uses a demo key that allows test transactions but could expose the system to abuse.
+**Issue**: If `STRIPE_SECRET_KEY` is not set, the app used a demo key that could expose the system to abuse.
 
-**Current code**:
+**Solution Implemented** (December 14, 2025):
+
+Removed demo key fallback with proper environment validation:
+
 ```javascript
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY || 'sk_test_demo_key_replace_me';
-```
-
-**Fix**:
-```javascript
-// Fail fast in production if Stripe key is missing
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+
+// Fail fast in production if Stripe key is missing
 if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
   console.error('FATAL: STRIPE_SECRET_KEY is required in production');
   process.exit(1);
 }
 
-// Only use demo key in development with clear warning
+// Warn in development if using without key
 if (!stripeSecretKey) {
-  console.warn('⚠️  Using Stripe demo key - payments will not work');
+  console.warn('⚠️  STRIPE_SECRET_KEY not set - payment endpoints will fail');
 }
+
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 ```
+
+**Behavior**:
+- **Production**: App exits immediately if `STRIPE_SECRET_KEY` is missing
+- **Development**: Warning logged, payment endpoints return 503 Service Unavailable
+- No more insecure demo key fallback
 
 ---
 
