@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { createEmailNotVerifiedError } = require('../utils/errorHelpers');
 
 // Protect routes - verify JWT token
 const protect = async (req, res, next) => {
@@ -102,4 +103,13 @@ const authorize = (...roles) => {
   };
 };
 
-module.exports = { protect, optionalAuth, authorize };
+// Require email verification for sensitive operations
+const requireEmailVerified = (req, res, next) => {
+  if (!req.user.isEmailVerified) {
+    const errorResponse = createEmailNotVerifiedError();
+    return res.status(403).json(errorResponse);
+  }
+  next();
+};
+
+module.exports = { protect, optionalAuth, authorize, requireEmailVerified };

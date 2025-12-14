@@ -9,7 +9,7 @@
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
-| High     | 5     | 3     | 2         |
+| High     | 5     | 4     | 1         |
 | Medium   | 8     | 0     | 8         |
 
 ---
@@ -293,72 +293,61 @@ UserSchema.methods.resetLoginAttempts = function() { ... }
 
 ---
 
-### 8. [ ] Email Verification Not Enforced
+### 8. [x] Email Verification Not Enforced ✅ FIXED
 
-**Location**: `controllers/authController.js`, `models/User.js`
+**Location**: `middleware/auth.js`, routes files
 
-**Issue**: Users can register and immediately access all features without verifying their email. This allows fake accounts and makes account recovery difficult.
+**Issue**: Users could register and immediately access all features without verifying their email. The `isEmailVerified` field and email verification endpoints already existed but were not enforced for sensitive operations.
 
-**Fix** (multi-step):
+**Solution Implemented** (December 14, 2025):
 
-**Step 1**: Add email verification fields to User model:
+The email verification system was already in place but not enforced. Added middleware to require verified email for sensitive operations.
+
+**New error code** (`constants/errorCodes.js`):
 ```javascript
-emailVerified: { type: Boolean, default: false },
-emailVerificationToken: String,
-emailVerificationExpires: Date
+const AUTH_EMAIL_NOT_VERIFIED = 'AUTH_EMAIL_NOT_VERIFIED';
 ```
 
-**Step 2**: Generate verification token on registration:
+**New error helper** (`utils/errorHelpers.js`):
 ```javascript
-const crypto = require('crypto');
-
-// In register function
-const verificationToken = crypto.randomBytes(32).toString('hex');
-user.emailVerificationToken = crypto
-  .createHash('sha256')
-  .update(verificationToken)
-  .digest('hex');
-user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-await user.save();
-
-// Send email with verification link
-// await sendVerificationEmail(user.email, verificationToken);
+const createEmailNotVerifiedError = () => {
+  return {
+    success: false,
+    error: 'Email verification required',
+    code: ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED,
+    details: {
+      message: 'You must verify your email address before performing this action.',
+      suggestion: 'Please check your inbox for the verification email, or request a new one.',
+      action: 'resend-verification'
+    }
+  };
+};
 ```
 
-**Step 3**: Add verification endpoint:
+**New middleware** (`middleware/auth.js`):
 ```javascript
-// GET /api/auth/verify-email/:token
-const verifyEmail = asyncHandler(async (req, res) => {
-  const hashedToken = crypto
-    .createHash('sha256')
-    .update(req.params.token)
-    .digest('hex');
-
-  const user = await User.findOne({
-    emailVerificationToken: hashedToken,
-    emailVerificationExpires: { $gt: Date.now() }
-  });
-
-  if (!user) {
-    return res.status(400).json({
-      success: false,
-      error: 'Invalid or expired verification token'
-    });
+const requireEmailVerified = (req, res, next) => {
+  if (!req.user.isEmailVerified) {
+    const errorResponse = createEmailNotVerifiedError();
+    return res.status(403).json(errorResponse);
   }
-
-  user.emailVerified = true;
-  user.emailVerificationToken = undefined;
-  user.emailVerificationExpires = undefined;
-  await user.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Email verified successfully'
-  });
-});
+  next();
+};
 ```
 
-**Step 4**: Add middleware to check email verification for sensitive operations.
+**Routes updated**:
+- `routes/orders.js` - `POST /` (create order)
+- `routes/reservations.js` - `POST /`, `PUT /:id` (create/update reservation)
+- `routes/payments.js` - `POST /stripe/create-intent`, `POST /stripe/confirm`
+- `routes/menu.js` - `POST /:id/review` (add review)
+- `routes/review.js` - `PUT /:reviewId`, `DELETE /:reviewId`
+- `routes/restaurant.js` - `POST /review`, `PUT /review/:id`, `DELETE /review/:id`
+
+**Read-only operations** (viewing orders, reservations, reviews) remain accessible to unverified users.
+
+**Tests**: 9 new tests in `tests/integration/emailVerificationEnforcement.test.js`
+
+**Frontend impact**: When a 403 with code `AUTH_EMAIL_NOT_VERIFIED` is received, display a message prompting the user to verify their email with a link to resend the verification email.
 
 ---
 
@@ -755,3 +744,4 @@ After implementing each fix:
 | 2025-12-14 | #5 | Fixed | Safe logger utility with sanitization |
 | 2025-12-14 | #6 | Fixed | Environment-aware CORS configuration |
 | 2025-12-14 | #7 | Fixed | Account lockout after 5 failed attempts |
+| 2025-12-14 | #8 | Fixed | Email verification enforced for sensitive operations |

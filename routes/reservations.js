@@ -10,17 +10,17 @@ const {
   cancelUserReservation,
   getReservationStats,
 } = require('../controllers/reservationController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, requireEmailVerified } = require('../middleware/auth');
 
 const router = express.Router();
 
 // All routes are protected
 router.use(protect);
 
-// User routes
-router.post('/', createReservation);
+// User routes - create/update require verified email
+router.post('/', requireEmailVerified, createReservation);
 router.get('/', getUserReservations);
-router.put('/:id', updateUserReservation);
+router.put('/:id', requireEmailVerified, updateUserReservation);
 router.delete('/:id', cancelUserReservation);
 
 // Admin routes - specific routes MUST be before generic ones to avoid conflicts

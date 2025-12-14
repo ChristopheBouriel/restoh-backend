@@ -11,7 +11,7 @@ const {
   getRecentAdminOrders,
   getHistoricalAdminOrders,
 } = require('../controllers/orderController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, requireEmailVerified } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -24,8 +24,8 @@ router.get('/admin/history', authorize('admin'), getHistoricalAdminOrders);
 router.get('/admin', authorize('admin'), getAdminOrders);
 router.get('/stats', authorize('admin'), getOrderStats);
 
-// User routes
-router.post('/', createOrder);
+// User routes - createOrder requires verified email
+router.post('/', requireEmailVerified, createOrder);
 router.get('/', getUserOrders);
 router.get('/:id', getOrder);
 router.patch('/:id/status', authorize('admin'), updateOrderStatus);

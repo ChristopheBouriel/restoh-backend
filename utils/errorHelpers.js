@@ -126,6 +126,23 @@ const createAccountLockedError = (remainingMinutes) => {
   };
 };
 
+/**
+ * Create an email not verified error
+ * @returns {Object} Structured error response
+ */
+const createEmailNotVerifiedError = () => {
+  return {
+    success: false,
+    error: 'Email verification required',
+    code: ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED,
+    details: {
+      message: 'You must verify your email address before performing this action.',
+      suggestion: 'Please check your inbox for the verification email, or request a new one.',
+      action: 'resend-verification'
+    }
+  };
+};
+
 // ========================================
 // RESERVATION ERRORS
 // ========================================
@@ -862,6 +879,7 @@ module.exports = {
   createAccountDeletedError,
   createAccountInactiveError,
   createAccountLockedError,
+  createEmailNotVerifiedError,
 
   // User Management
   createUserNotFoundError,

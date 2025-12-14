@@ -3,7 +3,7 @@ const {
   updateReview,
   deleteReview,
 } = require('../controllers/reviewController');
-const { protect } = require('../middleware/auth');
+const { protect, requireEmailVerified } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ const router = express.Router();
 // These routes use the review ID directly, without needing the parent menuItem ID
 // This follows REST best practices: avoid nesting beyond 2 levels for individual resource operations
 
-router.put('/:reviewId', protect, updateReview);
-router.delete('/:reviewId', protect, deleteReview);
+router.put('/:reviewId', protect, requireEmailVerified, updateReview);
+router.delete('/:reviewId', protect, requireEmailVerified, deleteReview);
 
 module.exports = router;

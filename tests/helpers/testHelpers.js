@@ -11,6 +11,7 @@ const createTestUser = async (userData = {}) => {
     email: 'test@example.com',
     password: 'password123',
     role: 'user',
+    isEmailVerified: true, // Default to verified for tests
   };
 
   // For deleted users, bypass validation
@@ -34,6 +35,7 @@ const createTestAdmin = async (userData = {}) => {
     email: 'admin@example.com',
     password: 'password123',
     role: 'admin',
+    isEmailVerified: true, // Default to verified for tests
   };
 
   const admin = await User.create({ ...defaultAdmin, ...userData });
