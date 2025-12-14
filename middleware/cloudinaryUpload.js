@@ -1,6 +1,7 @@
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const logger = require('../utils/logger');
 
 // Configuration Cloudinary
 cloudinary.config({
@@ -77,10 +78,10 @@ const createUploadMiddleware = (type = 'menuItems', fieldName = 'image') => {
         // Cleanup de l'ancienne image si c'est une mise à jour
         if (req.body.oldImagePublicId) {
           cloudinary.uploader.destroy(req.body.oldImagePublicId)
-            .catch(err => console.log('Erreur suppression ancienne image:', err));
+            .catch(err => logger.warn('Error deleting old image', { error: err.message }));
         }
 
-        console.log(`✅ Image uploadée sur Cloudinary: ${req.file.path}`);
+        logger.debug('Image uploaded to Cloudinary', { filename: req.file.filename });
       }
 
       next();
@@ -94,7 +95,7 @@ const deleteImage = async (publicId) => {
     const result = await cloudinary.uploader.destroy(publicId);
     return result;
   } catch (error) {
-    console.error('Erreur suppression Cloudinary:', error);
+    logger.error('Error deleting from Cloudinary', { publicId, error: error.message });
     throw error;
   }
 };

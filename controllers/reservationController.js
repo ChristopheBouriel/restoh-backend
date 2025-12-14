@@ -1,6 +1,7 @@
 const Reservation = require('../models/Reservation');
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../utils/logger');
 const { validateReservation } = require('../utils/validation');
 const { isValidSlot, isBeforeReservationTime, isAfterReservationTime } = require('../utils/timeSlots');
 const {
@@ -102,13 +103,13 @@ const createReservation = asyncHandler(async (req, res) => {
         const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
         if (table) {
           await addTableBooking(table, date, slot);
-          console.log(`Table ${tableNum} booked for reservation ${reservation._id}`);
+          logger.debug('Table booked for reservation', { tableNum, reservationId: reservation._id });
         } else {
-          console.warn(`Table ${tableNum} not found when creating reservation`);
+          logger.warn('Table not found when creating reservation', { tableNum });
         }
       }
     } catch (error) {
-      console.error('Error updating table bookings:', error);
+      logger.error('Error updating table bookings', error);
     }
   }
 
@@ -119,9 +120,9 @@ const createReservation = asyncHandler(async (req, res) => {
         totalReservations: 1,
       },
     });
-    console.log('User statistics updated for new reservation');
+    logger.debug('User statistics updated for new reservation');
   } catch (error) {
-    console.error('Error updating user statistics:', error);
+    logger.error('Error updating user statistics', error);
   }
 
   // Populate user details
@@ -346,7 +347,7 @@ const updateAdminReservation = asyncHandler(async (req, res) => {
           const oldTable = await Table.findOne({ tableNumber: parseInt(oldTableNum) });
           if (oldTable) {
             await removeTableBooking(oldTable, originalReservation.date, originalReservation.slot);
-            console.log(`Removed booking from table ${oldTableNum}`);
+            logger.debug('Removed booking from table', { tableNum: oldTableNum });
           }
         }
       }
@@ -357,7 +358,7 @@ const updateAdminReservation = asyncHandler(async (req, res) => {
           const newTable = await Table.findOne({ tableNumber: parseInt(newTableNum) });
           if (newTable) {
             await addTableBooking(newTable, originalReservation.date, originalReservation.slot);
-            console.log(`Added booking to table ${newTableNum}`);
+            logger.debug('Added booking to table', { tableNum: newTableNum });
           } else {
             return res.status(400).json({
               success: false,
@@ -367,7 +368,7 @@ const updateAdminReservation = asyncHandler(async (req, res) => {
         }
       }
     } catch (error) {
-      console.error('Error updating table bookings:', error);
+      logger.error('Error updating table bookings', error);
       return res.status(500).json({
         success: false,
         message: 'Error updating table bookings',
@@ -382,11 +383,11 @@ const updateAdminReservation = asyncHandler(async (req, res) => {
         const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
         if (table) {
           await removeTableBooking(table, originalReservation.date, originalReservation.slot);
-          console.log(`Removed booking from table ${tableNum} due to cancellation`);
+          logger.debug('Removed booking from table due to cancellation', { tableNum });
         }
       }
     } catch (error) {
-      console.error('Error removing table bookings on cancellation:', error);
+      logger.error('Error removing table bookings on cancellation', error);
     }
   }
 
@@ -547,7 +548,7 @@ const updateUserReservation = asyncHandler(async (req, res) => {
           const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
           if (table) {
             await removeTableBooking(table, reservation.date, reservation.slot);
-            console.log(`Removed old booking for table ${tableNum}`);
+            logger.debug('Removed old booking for table', { tableNum });
           }
         }
       }
@@ -558,7 +559,7 @@ const updateUserReservation = asyncHandler(async (req, res) => {
           const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
           if (table) {
             await addTableBooking(table, finalDate, finalSlot);
-            console.log(`Added new booking for table ${tableNum} on ${finalDate}/${finalSlot}`);
+            logger.debug('Added new booking for table', { tableNum, date: finalDate, slot: finalSlot });
           } else {
             return res.status(400).json({
               success: false,
@@ -568,7 +569,7 @@ const updateUserReservation = asyncHandler(async (req, res) => {
         }
       }
     } catch (error) {
-      console.error('Error updating table bookings:', error);
+      logger.error('Error updating table bookings', error);
       return res.status(500).json({
         success: false,
         message: 'Error updating table bookings',
@@ -662,11 +663,11 @@ const updateReservationStatus = asyncHandler(async (req, res) => {
         const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
         if (table) {
           await removeTableBooking(table, reservation.date, reservation.slot);
-          console.log(`Removed booking from table ${tableNum} - reservation ${status}`);
+          logger.debug('Removed booking from table', { tableNum, status });
         }
       }
     } catch (error) {
-      console.error('Error removing table bookings:', error);
+      logger.error('Error removing table bookings', error);
       return res.status(500).json({
         success: false,
         message: 'Error updating table bookings',
@@ -741,13 +742,13 @@ const cancelUserReservation = asyncHandler(async (req, res) => {
         const table = await Table.findOne({ tableNumber: parseInt(tableNum) });
         if (table) {
           await removeTableBooking(table, reservation.date, reservation.slot);
-          console.log(`Table ${tableNum} booking removed for cancelled reservation ${reservation._id}`);
+          logger.debug('Table booking removed for cancelled reservation', { tableNum, reservationId: reservation._id });
         } else {
-          console.warn(`Table ${tableNum} not found when cancelling reservation`);
+          logger.warn('Table not found when cancelling reservation', { tableNum });
         }
       }
     } catch (error) {
-      console.error('Error removing table bookings:', error);
+      logger.error('Error removing table bookings', error);
     }
   }
 
@@ -758,9 +759,9 @@ const cancelUserReservation = asyncHandler(async (req, res) => {
         totalReservations: -1,
       },
     });
-    console.log('User statistics updated for cancelled reservation');
+    logger.debug('User statistics updated for cancelled reservation');
   } catch (error) {
-    console.error('Error updating user statistics:', error);
+    logger.error('Error updating user statistics', error);
   }
 
   res.status(200).json({

@@ -3,6 +3,7 @@ const MenuItem = require('../models/MenuItem');
 const User = require('../models/User');
 const asyncHandler = require('../utils/asyncHandler');
 const { validateCreateOrder } = require('../utils/validation');
+const logger = require('../utils/logger');
 const {
   createOrderEmptyItemsError,
   createOrderInvalidTypeError,
@@ -17,8 +18,8 @@ const {
 // @route   POST /api/orders
 // @access  Private
 const createOrder = asyncHandler(async (req, res) => {
-  console.log('Creating order with data:', req.body);
-  console.log('User:', req.user);
+  logger.debug('Creating order', { orderType: req.body.orderType, itemCount: req.body.items?.length });
+  logger.debug('User creating order', { userId: req.user._id });
 
   // Validate input
   const { error } = validateCreateOrder(req.body);
@@ -110,7 +111,7 @@ const createOrder = asyncHandler(async (req, res) => {
     phone: phone || req.user.phone,
   });
 
-  console.log('Order created in MongoDB:', order._id);
+  logger.success('Order created in MongoDB', { orderId: order._id });
 
   // Update user statistics if payment is already paid
   if (paymentStatus === 'paid') {
@@ -121,9 +122,9 @@ const createOrder = asyncHandler(async (req, res) => {
           totalSpent: calculatedTotal,
         },
       });
-      console.log('User statistics updated for paid order');
+      logger.debug('User statistics updated for paid order');
     } catch (error) {
-      console.error('Error updating user statistics:', error);
+      logger.error('Error updating user statistics', error);
     }
   }
 
@@ -138,7 +139,7 @@ const createOrder = asyncHandler(async (req, res) => {
 // @route   GET /api/orders
 // @access  Private
 const getUserOrders = asyncHandler(async (req, res) => {
-  console.log('Getting user orders for user:', req.user.id);
+  logger.debug('Getting user orders', { userId: req.user._id });
 
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 10;
@@ -247,7 +248,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     { new: true, runValidators: true }
   ).populate('items.menuItem', 'name price');
 
-  console.log(`✅ Order status updated successfully in MongoDB: ${order._id}`);
+  logger.success('Order status updated in MongoDB', { orderId: order._id, status });
 
   // Update menu items orderCount if order is delivered for the first time
   if (status === 'delivered' && originalOrder.status !== 'delivered') {
@@ -262,9 +263,9 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
           );
         }
       }
-      console.log('Menu items orderCount updated for delivered order');
+      logger.debug('Menu items orderCount updated for delivered order');
     } catch (error) {
-      console.error('Error updating menu items orderCount:', error);
+      logger.error('Error updating menu items orderCount', error);
     }
   }
 
@@ -277,9 +278,9 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
           totalSpent: order.totalPrice,
         },
       });
-      console.log('User statistics updated for delivered order');
+      logger.debug('User statistics updated for delivered order');
     } catch (error) {
-      console.error('Error updating user statistics:', error);
+      logger.error('Error updating user statistics', error);
     }
   }
 
@@ -415,7 +416,7 @@ const getAdminOrders = asyncHandler(async (req, res) => {
     pagination.prev = { page: page - 1, limit };
   }
 
-  console.log(`✅ Found ${orders.length} orders in MongoDB for admin`);
+  logger.debug('Found orders for admin', { count: orders.length });
 
   res.status(200).json({
     success: true,

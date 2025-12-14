@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const EmailVerification = require('../models/EmailVerification');
 const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../utils/logger');
 const { validateRegister, validateLogin, validateUserUpdate } = require('../utils/validation');
 const { sendTokenResponse, clearTokenCookie } = require('../utils/authCookies');
 const emailService = require('../services/email/emailService');
@@ -49,9 +50,9 @@ const register = asyncHandler(async (req, res) => {
 
   try {
     await emailService.sendVerificationEmail(user.email, user.name, verificationUrl);
-    console.log(`✓ Verification email sent to ${user.email}`);
+    logger.success('Verification email sent', { userId: user._id });
   } catch (error) {
-    console.error('✗ Failed to send verification email:', error.message);
+    logger.error('Failed to send verification email', error);
     // Don't fail registration if email fails, user can request resend
   }
 
@@ -130,8 +131,7 @@ const getMe = asyncHandler(async (req, res) => {
 // @route   PUT /api/auth/profile
 // @access  Private
 const updateProfileUser = asyncHandler(async (req, res) => {
-  console.log('updateProfileUser called with body:', req.body);
-  console.log('User ID:', req.user._id);
+  logger.debug('updateProfileUser called', { userId: req.user._id });
 
   // Validate input
   const { error } = validateUserUpdate(req.body);
@@ -208,7 +208,7 @@ const updateProfileUser = asyncHandler(async (req, res) => {
     });
   }
 
-  console.log('Fields to update:', fieldsToUpdate);
+  logger.debug('Fields to update', { fieldCount: Object.keys(fieldsToUpdate).length });
 
   if (Object.keys(fieldsToUpdate).length === 0) {
     return res.status(400).json({
@@ -229,8 +229,7 @@ const updateProfileUser = asyncHandler(async (req, res) => {
     });
   }
 
-  console.log('User updated successfully:', user._id);
-  console.log('User address after update:', user.address);
+  logger.success('User profile updated', { userId: user._id });
 
   res.status(200).json({
     success: true,

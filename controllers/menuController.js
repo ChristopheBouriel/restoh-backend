@@ -1,5 +1,6 @@
 const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../utils/logger');
 const { menuSchema } = require('../utils/validation');
 const { deleteImage } = require('../middleware/cloudinaryUpload');
 const {
@@ -138,9 +139,9 @@ const updateMenuItem = asyncHandler(async (req, res) => {
     if (req.file && existingMenuItem.cloudinaryPublicId) {
       try {
         await deleteImage(existingMenuItem.cloudinaryPublicId);
-        console.log('✅ Old image deleted from Cloudinary');
+        logger.debug('Old image deleted from Cloudinary', { menuItemId: req.params.id });
       } catch (error) {
-        console.log('Error deleting old image from Cloudinary:', error);
+        logger.warn('Error deleting old image from Cloudinary', { menuItemId: req.params.id, error: error.message });
       }
     }
 
@@ -194,7 +195,7 @@ const deleteMenuItem = asyncHandler(async (req, res) => {
     try {
       await deleteImage(menuItem.cloudinaryPublicId);
     } catch (error) {
-      console.log('Error deleting image from Cloudinary:', error);
+      logger.warn('Error deleting image from Cloudinary', { menuItemId: req.params.id, error: error.message });
     }
   }
 

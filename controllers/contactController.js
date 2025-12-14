@@ -1,5 +1,6 @@
 const Contact = require('../models/Contact');
 const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../utils/logger');
 const {
   contactSchema,
   DiscussionSchema
@@ -49,11 +50,7 @@ const submitContactForm = asyncHandler(async (req, res) => {
   // 1. Send email notification to admin
   // 2. Send confirmation email to user
 
-  console.log('📧 New contact form submission:');
-  console.log(`From: ${name} (${email})`);
-  console.log(`Phone: ${phone || 'N/A'}`);
-  console.log(`Subject: ${subject}`);
-  console.log(`Message: ${message}`);
+  logger.info('New contact form submission', { subject, hasPhone: !!phone });
 
   res.status(200).json({
     success: true,

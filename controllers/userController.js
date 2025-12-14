@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Reservation = require('../models/Reservation');
 const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../utils/logger');
 const { validateAdminUserUpdate } = require('../utils/validation');
 const {
   createUserNotFoundError,
@@ -90,7 +91,7 @@ const getUser = asyncHandler(async (req, res) => {
 // @route   PUT /api/users/:id
 // @access  Private/Admin
 const updateUser = asyncHandler(async (req, res) => {
-  console.log(req.body)
+  logger.debug('Admin updating user', { targetUserId: req.params.id });
 
   // Validate input
   const { error } = validateAdminUserUpdate(req.body);

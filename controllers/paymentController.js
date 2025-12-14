@@ -1,5 +1,6 @@
 const Stripe = require('stripe');
 const asyncHandler = require('../utils/asyncHandler');
+const logger = require('../utils/logger');
 const {
   createInvalidAmountError,
   createPaymentIntentIdRequiredError,
@@ -13,13 +14,13 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
 // Fail fast in production if Stripe key is missing
 if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
-  console.error('FATAL: STRIPE_SECRET_KEY is required in production');
+  logger.error('FATAL: STRIPE_SECRET_KEY is required in production');
   process.exit(1);
 }
 
 // Warn in development if using without key
 if (!stripeSecretKey) {
-  console.warn('⚠️  STRIPE_SECRET_KEY not set - payment endpoints will fail');
+  logger.warn('STRIPE_SECRET_KEY not set - payment endpoints will fail');
 }
 
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
@@ -61,7 +62,7 @@ const createStripePaymentIntent = asyncHandler(async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Stripe payment intent error:', error);
+    logger.error('Stripe payment intent error', error);
     const errorResponse = createPaymentIntentCreationFailedError(error.message);
     res.status(500).json(errorResponse);
   }
@@ -104,7 +105,7 @@ const confirmStripePayment = asyncHandler(async (req, res) => {
       res.status(400).json(errorResponse);
     }
   } catch (error) {
-    console.error('Stripe payment confirmation error:', error);
+    logger.error('Stripe payment confirmation error', error);
     const errorResponse = createPaymentConfirmationFailedError(error.message);
     res.status(500).json(errorResponse);
   }

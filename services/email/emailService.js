@@ -1,6 +1,7 @@
 const { getBrevoClient } = require('./brevoConfig');
 const fs = require('fs');
 const path = require('path');
+const logger = require('../../utils/logger');
 
 /**
  * Email Service - Centralized email sending with Brevo
@@ -57,10 +58,10 @@ class EmailService {
 
       const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
 
-      console.log(`✓ Email sent to ${to}: ${subject}`);
+      logger.success('Email sent', { subject });
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('✗ Email sending failed:', error.message);
+      logger.error('Email sending failed', { subject, error: error.message });
       throw new Error(`Failed to send email: ${error.message}`);
     }
   }
