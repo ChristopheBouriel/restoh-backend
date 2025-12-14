@@ -9,7 +9,8 @@ const {
   createInvalidCredentialsError,
   createEmailExistsError,
   createAccountDeletedError,
-  createAccountInactiveError
+  createAccountInactiveError,
+  createAccountLockedError
 } = require('../utils/errorHelpers');
 
 // @desc    Register user
@@ -74,18 +75,36 @@ const login = asyncHandler(async (req, res) => {
 
   const { email, password } = req.body;
 
-  // Find user with password
-  const user = await User.findOne({ email }).select('+password');
+  // Find user with password and lockout fields
+  const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
 
   if (!user) {
     const errorResponse = createInvalidCredentialsError(email);
     return res.status(401).json(errorResponse);
   }
 
+  // Check if account is locked
+  if (user.isLocked) {
+    const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / 60000);
+    const errorResponse = createAccountLockedError(remainingMinutes);
+    return res.status(423).json(errorResponse);
+  }
+
   // Check if password matches
   const isMatch = await user.matchPassword(password);
 
   if (!isMatch) {
+    // Increment failed login attempts
+    await user.incLoginAttempts();
+
+    // Re-fetch user to check if now locked
+    const updatedUser = await User.findById(user._id).select('+lockUntil');
+    if (updatedUser.isLocked) {
+      const remainingMinutes = Math.ceil((updatedUser.lockUntil - Date.now()) / 60000);
+      const errorResponse = createAccountLockedError(remainingMinutes);
+      return res.status(423).json(errorResponse);
+    }
+
     const errorResponse = createInvalidCredentialsError();
     return res.status(401).json(errorResponse);
   }
@@ -100,6 +119,11 @@ const login = asyncHandler(async (req, res) => {
   if (!user.isActive) {
     const errorResponse = createAccountInactiveError();
     return res.status(403).json(errorResponse);
+  }
+
+  // Reset login attempts on successful login
+  if (user.loginAttempts > 0) {
+    await user.resetLoginAttempts();
   }
 
   // Update last login

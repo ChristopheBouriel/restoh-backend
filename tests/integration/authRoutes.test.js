@@ -420,6 +420,128 @@ describe('Auth Routes Integration Tests', () => {
     });
   });
 
+  describe('Account Lockout', () => {
+    it('should lock account after 5 failed login attempts', async () => {
+      await createTestUser({
+        email: 'lockout@example.com',
+        password: 'correctpassword',
+      });
+
+      // Make 4 failed attempts (not locked yet)
+      for (let i = 0; i < 4; i++) {
+        const res = await request(app)
+          .post('/api/auth/login')
+          .send({
+            email: 'lockout@example.com',
+            password: 'wrongpassword',
+          });
+        expect(res.status).toBe(401); // Not locked yet
+      }
+
+      // 5th attempt triggers the lock and returns 423
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'lockout@example.com',
+          password: 'wrongpassword',
+        })
+        .expect(423);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.code).toBe('AUTH_ACCOUNT_LOCKED');
+      expect(res.body.details.remainingMinutes).toBeDefined();
+    });
+
+    it('should return 423 even with correct password when locked', async () => {
+      await createTestUser({
+        email: 'locked@example.com',
+        password: 'correctpassword',
+      });
+
+      // Make 5 failed attempts to lock the account
+      for (let i = 0; i < 5; i++) {
+        await request(app)
+          .post('/api/auth/login')
+          .send({
+            email: 'locked@example.com',
+            password: 'wrongpassword',
+          });
+      }
+
+      // Try with correct password - should still be locked
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'locked@example.com',
+          password: 'correctpassword',
+        })
+        .expect(423);
+
+      expect(res.body.success).toBe(false);
+      expect(res.body.code).toBe('AUTH_ACCOUNT_LOCKED');
+    });
+
+    it('should reset login attempts on successful login', async () => {
+      const user = await createTestUser({
+        email: 'reset@example.com',
+        password: 'correctpassword',
+      });
+
+      // Make 3 failed attempts (not enough to lock)
+      for (let i = 0; i < 3; i++) {
+        await request(app)
+          .post('/api/auth/login')
+          .send({
+            email: 'reset@example.com',
+            password: 'wrongpassword',
+          });
+      }
+
+      // Successful login should reset attempts
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'reset@example.com',
+          password: 'correctpassword',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+
+      // Verify attempts are reset (by checking user in DB)
+      const User = require('../../models/User');
+      const updatedUser = await User.findById(user._id).select('+loginAttempts');
+      expect(updatedUser.loginAttempts).toBe(0);
+    });
+
+    it('should allow login after lock expires', async () => {
+      const User = require('../../models/User');
+
+      // Create user with expired lock
+      const user = await createTestUser({
+        email: 'expired@example.com',
+        password: 'correctpassword',
+      });
+
+      // Set lock that expired 1 minute ago
+      await User.findByIdAndUpdate(user._id, {
+        loginAttempts: 5,
+        lockUntil: new Date(Date.now() - 60000) // 1 minute ago
+      });
+
+      // Should be able to login (lock expired)
+      const res = await request(app)
+        .post('/api/auth/login')
+        .send({
+          email: 'expired@example.com',
+          password: 'correctpassword',
+        })
+        .expect(200);
+
+      expect(res.body.success).toBe(true);
+    });
+  });
+
   describe('DELETE /api/auth/delete-account', () => {
     it('should soft delete account successfully', async () => {
       const user = await createTestUser({ email: 'todelete@example.com' });

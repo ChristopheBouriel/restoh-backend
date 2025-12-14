@@ -91,6 +91,17 @@ const UserSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  // Account lockout fields
+  loginAttempts: {
+    type: Number,
+    default: 0,
+    select: false,
+  },
+  lockUntil: {
+    type: Date,
+    default: null,
+    select: false,
+  },
 }, {
   timestamps: true,
   toJSON: {
@@ -111,6 +122,11 @@ const UserSchema = new mongoose.Schema({
       return ret;
     }
   }
+});
+
+// Virtual for checking if account is locked
+UserSchema.virtual('isLocked').get(function() {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
 // Encrypt password using bcrypt
@@ -139,6 +155,37 @@ UserSchema.methods.matchPassword = async function(enteredPassword) {
 UserSchema.methods.updateLastLogin = function() {
   this.lastLogin = new Date();
   return this.save({ validateBeforeSave: false });
+};
+
+// Increment login attempts and lock if threshold reached
+UserSchema.methods.incLoginAttempts = async function() {
+  const MAX_LOGIN_ATTEMPTS = 5;
+  const LOCK_TIME = 30 * 60 * 1000; // 30 minutes
+
+  // If lock has expired, reset attempts
+  if (this.lockUntil && this.lockUntil < Date.now()) {
+    return this.updateOne({
+      $set: { loginAttempts: 1 },
+      $unset: { lockUntil: 1 }
+    });
+  }
+
+  const updates = { $inc: { loginAttempts: 1 } };
+
+  // Lock account if max attempts reached
+  if (this.loginAttempts + 1 >= MAX_LOGIN_ATTEMPTS && !this.isLocked) {
+    updates.$set = { lockUntil: Date.now() + LOCK_TIME };
+  }
+
+  return this.updateOne(updates);
+};
+
+// Reset login attempts on successful login
+UserSchema.methods.resetLoginAttempts = function() {
+  return this.updateOne({
+    $set: { loginAttempts: 0 },
+    $unset: { lockUntil: 1 }
+  });
 };
 
 // Add index for performance on date-based queries

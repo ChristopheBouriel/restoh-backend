@@ -107,6 +107,25 @@ const createAccountInactiveError = () => {
   };
 };
 
+/**
+ * Create an account locked error (too many failed login attempts)
+ * @param {number} remainingMinutes - Minutes until unlock
+ * @returns {Object} Structured error response
+ */
+const createAccountLockedError = (remainingMinutes) => {
+  return {
+    success: false,
+    error: 'Account temporarily locked',
+    code: ERROR_CODES.AUTH_ACCOUNT_LOCKED,
+    details: {
+      message: `Too many failed login attempts. Your account has been temporarily locked for security reasons.`,
+      remainingMinutes,
+      suggestion: `Please try again in ${remainingMinutes} minute${remainingMinutes !== 1 ? 's' : ''}.`,
+      tip: 'If you forgot your password, use the password reset feature.'
+    }
+  };
+};
+
 // ========================================
 // RESERVATION ERRORS
 // ========================================
@@ -842,6 +861,7 @@ module.exports = {
   createEmailExistsError,
   createAccountDeletedError,
   createAccountInactiveError,
+  createAccountLockedError,
 
   // User Management
   createUserNotFoundError,

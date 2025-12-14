@@ -9,7 +9,7 @@
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
-| High     | 5     | 2     | 3         |
+| High     | 5     | 3     | 2         |
 | Medium   | 8     | 0     | 8         |
 
 ---
@@ -244,60 +244,52 @@ const corsOptions = {
 
 ---
 
-### 7. [ ] No Account Lockout After Failed Login Attempts
+### 7. [x] No Account Lockout After Failed Login Attempts ✅ FIXED
 
-**Location**: `controllers/authController.js`
+**Location**: `controllers/authController.js`, `models/User.js`
 
 **Issue**: No protection against brute-force attacks on user accounts. Attackers can try unlimited password combinations.
 
-**Fix**:
-```javascript
-// Add to User model
-const userSchema = new mongoose.Schema({
-  // ... existing fields
-  loginAttempts: { type: Number, default: 0 },
-  lockUntil: { type: Date }
-});
+**Solution Implemented** (December 14, 2025):
 
-userSchema.virtual('isLocked').get(function() {
+**User model changes** (`models/User.js`):
+```javascript
+// New fields (select: false to hide from normal queries)
+loginAttempts: { type: Number, default: 0, select: false },
+lockUntil: { type: Date, default: null, select: false }
+
+// Virtual to check lock status
+UserSchema.virtual('isLocked').get(function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
-// In authController.js login function
-const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
-
-  // Check if account is locked
-  if (user?.isLocked) {
-    const remainingTime = Math.ceil((user.lockUntil - Date.now()) / 60000);
-    return res.status(423).json({
-      success: false,
-      error: `Account locked. Try again in ${remainingTime} minutes.`,
-      code: 'ACCOUNT_LOCKED'
-    });
-  }
-
-  if (!user || !(await user.matchPassword(password))) {
-    // Increment failed attempts
-    if (user) {
-      user.loginAttempts += 1;
-      if (user.loginAttempts >= 5) {
-        user.lockUntil = Date.now() + 30 * 60 * 1000; // Lock for 30 minutes
-      }
-      await user.save();
-    }
-    return res.status(401).json({ success: false, error: 'Invalid credentials' });
-  }
-
-  // Reset on successful login
-  user.loginAttempts = 0;
-  user.lockUntil = undefined;
-  await user.save();
-
-  // ... continue with token generation
-});
+// Methods for lockout management
+UserSchema.methods.incLoginAttempts = async function() { ... }
+UserSchema.methods.resetLoginAttempts = function() { ... }
 ```
+
+**Login flow changes** (`controllers/authController.js`):
+- Check if account is locked before password verification
+- Increment attempts on failed login (5 max)
+- Lock account for 30 minutes after 5 failures
+- Reset attempts on successful login
+- Return HTTP 423 (Locked) when account is locked
+
+**Error response**:
+```javascript
+{
+  success: false,
+  error: 'Account temporarily locked',
+  code: 'AUTH_ACCOUNT_LOCKED',
+  details: {
+    remainingMinutes: 28,
+    suggestion: 'Please try again in 28 minutes.',
+    tip: 'If you forgot your password, use the password reset feature.'
+  }
+}
+```
+
+**Tests**: 4 new tests covering lockout scenarios
 
 ---
 
@@ -762,3 +754,4 @@ After implementing each fix:
 | 2025-12-14 | #4 | Fixed | Stripe demo key fallback removed |
 | 2025-12-14 | #5 | Fixed | Safe logger utility with sanitization |
 | 2025-12-14 | #6 | Fixed | Environment-aware CORS configuration |
+| 2025-12-14 | #7 | Fixed | Account lockout after 5 failed attempts |
