@@ -452,7 +452,7 @@ const updateUserReservation = asyncHandler(async (req, res) => {
     });
   }
 
-  if (reservation.userId.toString() !== req.user._id.toString()) {
+  if (!reservation.userId.equals(req.user._id)) {
     return res.status(403).json({
       success: false,
       message: 'Not authorized to update this reservation',
@@ -701,7 +701,7 @@ const cancelUserReservation = asyncHandler(async (req, res) => {
     });
   }
 
-  if (reservation.userId.toString() !== req.user._id.toString()) {
+  if (!reservation.userId.equals(req.user._id)) {
     return res.status(403).json({
       success: false,
       message: 'Not authorized to cancel this reservation',

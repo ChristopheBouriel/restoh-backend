@@ -225,7 +225,7 @@ const addReview = asyncHandler(async (req, res) => {
   }
 
   const existingReview = menuItem.reviews.find(
-    (review) => review.user.id.toString() === req.user._id.toString()
+    (review) => review.user.id.equals(req.user._id)
   );
 
   if (existingReview) {

@@ -38,7 +38,7 @@ const updateReview = asyncHandler(async (req, res) => {
   }
 
   // Check if the user owns this review
-  if (review.user.id.toString() !== req.user._id.toString()) {
+  if (!review.user.id.equals(req.user._id)) {
     const errorResponse = createUnauthorizedReviewUpdateError();
     return res.status(403).json(errorResponse);
   }
@@ -85,7 +85,7 @@ const deleteReview = asyncHandler(async (req, res) => {
   }
 
   // Check if the user owns this review (or is admin)
-  if (review.user.id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!review.user.id.equals(req.user._id) && req.user.role !== 'admin') {
     const errorResponse = createUnauthorizedReviewUpdateError();
     return res.status(403).json(errorResponse);
   }

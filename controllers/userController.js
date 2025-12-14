@@ -116,7 +116,7 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   // Prevent admin from deactivating their own account
-  if (req.user.id === req.params.id && req.body.isActive === false) {
+  if (req.user._id.toString() === req.params.id && req.body.isActive === false) {
     return res.status(400).json({
       success: false,
       error: 'You cannot deactivate your own account',
@@ -130,7 +130,7 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 
   // Prevent admin from changing their own role
-  if (req.user.id === req.params.id && req.body.role && req.body.role !== existingUser.role) {
+  if (req.user._id.toString() === req.params.id && req.body.role && req.body.role !== existingUser.role) {
     return res.status(400).json({
       success: false,
       error: 'You cannot modify your own role',
@@ -181,7 +181,7 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 
   // Don't allow admin to delete themselves
-  if (user._id.toString() === req.user.id) {
+  if (user._id.equals(req.user._id)) {
     const errorResponse = createCannotDeleteOwnAccountError();
     return res.status(400).json(errorResponse);
   }

@@ -8,7 +8,7 @@
 
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
-| Critical | 4     | 2     | 2         |
+| Critical | 4     | 3     | 1         |
 | High     | 5     | 0     | 5         |
 | Medium   | 8     | 0     | 8         |
 
@@ -82,32 +82,36 @@ deletedAt: { type: Date, default: null }
 
 ---
 
-### 3. [ ] ObjectId Comparison Bug (Authentication Bypass Risk)
+### 3. [x] ObjectId Comparison Bug (Authentication Bypass Risk) ✅ FIXED
 
 **Location**: Multiple controllers
 
 **Issue**: Direct ObjectId comparison using `===` or `!==` can fail silently. ObjectIds must be compared using `.equals()` or `.toString()`.
 
-**Affected Files**:
-- `controllers/reviewController.js`
-- `controllers/restaurantReviewController.js`
-- `controllers/orderController.js`
-- `controllers/reservationController.js`
+**Solution Implemented** (December 14, 2025):
 
-**Example of the bug**:
+Replaced all fragile `.toString() !== .toString()` and `===` comparisons with Mongoose's `.equals()` method:
+
+**Files modified**:
+- `controllers/reviewController.js` (lines 41, 88)
+- `controllers/restaurantReviewController.js` (lines 122, 177)
+- `controllers/orderController.js` (lines 198, 304)
+- `controllers/reservationController.js` (lines 455, 704)
+- `controllers/userController.js` (lines 119, 133, 184)
+- `controllers/menuController.js` (line 228)
+
+**Pattern applied**:
 ```javascript
-// WRONG - May fail silently
-if (review.user.id !== req.user._id) { ... }
+// BEFORE (fragile)
+if (review.user.id.toString() !== req.user._id.toString()) { ... }
 
-// CORRECT
+// AFTER (robust)
 if (!review.user.id.equals(req.user._id)) { ... }
 ```
 
-**Fix**: Search and replace all ObjectId comparisons:
-```bash
-# Find all problematic comparisons
-grep -rn "\.user.*===\|\.user.*!==" controllers/
-```
+**Note**: For comparisons with `req.params.id` (URL string), we use `._id.toString() === req.params.id` since req.params is always a string.
+
+**Tests**: All 395 existing tests pass
 
 ---
 

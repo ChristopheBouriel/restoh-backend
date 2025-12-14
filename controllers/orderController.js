@@ -195,7 +195,7 @@ const getOrder = asyncHandler(async (req, res) => {
   }
 
   // Make sure user owns order or is admin
-  if (order.userId.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+  if (!order.userId.equals(req.user._id) && req.user.role !== 'admin') {
     const errorResponse = createValidationError('Not authorized to access this order', {
       orderId: req.params.id,
       message: 'You can only view your own orders.'
@@ -301,7 +301,7 @@ const cancelOrder = asyncHandler(async (req, res) => {
     return res.status(404).json(errorResponse);
   }
 
-  if (order.userId.toString() !== req.user._id.toString()) {
+  if (!order.userId.equals(req.user._id)) {
     const errorResponse = createValidationError('Not authorized to cancel this order', {
       orderId: req.params.id,
       message: 'You can only cancel your own orders.'
