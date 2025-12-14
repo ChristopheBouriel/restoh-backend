@@ -9,7 +9,7 @@
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
-| High     | 5     | 0     | 5         |
+| High     | 5     | 2     | 3         |
 | Medium   | 8     | 0     | 8         |
 
 ---
@@ -151,77 +151,96 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 
 ## High Issues
 
-### 5. [ ] Console.log of Sensitive Data
+### 5. [x] Console.log of Sensitive Data ✅ FIXED
 
 **Location**: Various files
 
 **Issue**: Sensitive information (tokens, user data, payment info) may be logged to console, which could be captured in log aggregators.
 
-**Affected areas**:
-- Authentication flows
-- Payment processing
-- Error handlers
+**Solution Implemented** (December 14, 2025):
 
-**Fix**:
+Created `utils/logger.js` - Safe logging utility with automatic sanitization:
+
 ```javascript
-// Create a safe logger utility
-// utils/logger.js
-const sanitize = (obj) => {
-  const sensitive = ['password', 'token', 'secret', 'authorization', 'cookie'];
-  const sanitized = { ...obj };
+const sensitiveKeys = [
+  'password', 'token', 'secret', 'authorization', 'cookie',
+  'creditcard', 'cardnumber', 'cvv', 'ssn', 'apikey', 'api_key',
+  'accesstoken', 'refreshtoken', 'privatekey', 'private_key'
+];
 
-  for (const key of Object.keys(sanitized)) {
-    if (sensitive.some(s => key.toLowerCase().includes(s))) {
-      sanitized[key] = '[REDACTED]';
-    }
-  }
-  return sanitized;
+const sanitize = (obj, depth = 0) => {
+  // Recursively sanitize objects, redacting sensitive fields
 };
 
 const logger = {
-  info: (msg, data) => console.log(msg, data ? sanitize(data) : ''),
-  error: (msg, data) => console.error(msg, data ? sanitize(data) : ''),
-  warn: (msg, data) => console.warn(msg, data ? sanitize(data) : '')
+  info: (msg, data) => isDev && console.log(`[INFO] ${msg}`, sanitize(data)),
+  debug: (msg, data) => isDev && console.log(`[DEBUG] ${msg}`, sanitize(data)),
+  warn: (msg, data) => console.warn(`[WARN] ${msg}`, sanitize(data)),
+  error: (msg, data) => console.error(`[ERROR] ${msg}`, sanitize(data)),
+  success: (msg, data) => isDev && console.log(`[SUCCESS] ✅ ${msg}`, sanitize(data))
 };
-
-module.exports = logger;
 ```
+
+**Files updated**:
+- All controllers (auth, contact, menu, order, payment, reservation, user)
+- `middleware/errorHandler.js`
+- `middleware/cloudinaryUpload.js`
+- `services/email/emailService.js`
+
+**Features**:
+- Automatic sanitization of sensitive fields
+- `info`, `debug`, `success` only log in development/test mode
+- `warn`, `error` always log (in all environments)
+- Recursive sanitization for nested objects
+- Error stack traces only in development
 
 ---
 
-### 6. [ ] Overly Permissive CORS Configuration
+### 6. [x] Overly Permissive CORS Configuration ✅ FIXED
 
-**Location**: `server.js:39-47`
+**Location**: `server.js:34-91`
 
-**Issue**: CORS allows multiple localhost origins, which is fine for development but risky if left in production.
+**Issue**: CORS allowed multiple localhost origins in all environments, risky in production.
 
-**Current code**:
+**Solution Implemented** (December 14, 2025):
+
+Environment-aware CORS configuration with strict production requirements:
+
 ```javascript
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Production origins from environment variable
+const prodOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [];
+
+// Fail fast in production if ALLOWED_ORIGINS is not set
+if (isProduction && prodOrigins.length === 0) {
+  logger.error('FATAL: ALLOWED_ORIGINS must be set in production');
+  process.exit(1);
+}
+
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // Allow no-origin requests
+    if (isDevelopment) return callback(null, true); // Permissive in dev
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn('CORS blocked request', { origin });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   // ...
 };
 ```
 
-**Fix**:
-```javascript
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.ALLOWED_ORIGINS?.split(',') || []
-    : ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-};
+**Behavior**:
+- **Development/Test**: All origins allowed for easy testing
+- **Production**: Only `ALLOWED_ORIGINS` env var origins permitted
+- **Production without ALLOWED_ORIGINS**: App exits immediately
 
-// In production, require explicit origin configuration
-if (process.env.NODE_ENV === 'production' && !process.env.ALLOWED_ORIGINS) {
-  console.error('FATAL: ALLOWED_ORIGINS must be set in production');
-  process.exit(1);
-}
-```
-
-**Environment variable**: Add `ALLOWED_ORIGINS=https://yourdomain.com,https://admin.yourdomain.com`
+**Environment variable**: `ALLOWED_ORIGINS=https://yourdomain.com,https://admin.yourdomain.com`
 
 ---
 
@@ -739,3 +758,7 @@ After implementing each fix:
 | 2025-12-13 | All | Identified | Initial OWASP audit completed |
 | 2025-12-13 | #1 | Fixed | Multi-level rate limiting implemented |
 | 2025-12-13 | #2 | Fixed | Soft delete with audit trail for contact messages |
+| 2025-12-14 | #3 | Fixed | ObjectId comparisons using .equals() |
+| 2025-12-14 | #4 | Fixed | Stripe demo key fallback removed |
+| 2025-12-14 | #5 | Fixed | Safe logger utility with sanitization |
+| 2025-12-14 | #6 | Fixed | Environment-aware CORS configuration |

@@ -7,6 +7,7 @@ const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const { standardLimiter } = require('./middleware/rateLimiter');
+const logger = require('./utils/logger');
 
 // Load environment variables
 dotenv.config();
@@ -30,45 +31,62 @@ app.use(helmet({
 // Global rate limiting - Active in all environments (relaxed in development)
 app.use('/api/', standardLimiter);
 
-// CORS configuration - Allow multiple frontend URLs
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
-  'http://localhost:3000', // Default frontend port
-  'http://localhost:3002', // Alternative port
-  'http://localhost:5173', // Vite default port
-  'http://localhost:5174', // Vite alternative port
-  'http://localhost:5175', // Vite alternative port
+// CORS configuration - Environment-aware origins
+const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+
+// Development origins (localhost only)
+const devOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
   'http://127.0.0.1:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
   'http://127.0.0.1:5175',
 ];
 
-// More permissive CORS for development
-const corsOptions = process.env.NODE_ENV === 'development'
-  ? {
-      origin: true, // Allow all origins in development
-      credentials: true,
-      optionsSuccessStatus: 200,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    }
-  : {
-      origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
+// Production origins from environment variable
+const prodOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [];
 
-        if (allowedOrigins.indexOf(origin) !== -1) {
-          callback(null, true);
-        } else {
-          callback(new Error('Not allowed by CORS'));
-        }
-      },
-      credentials: true,
-      optionsSuccessStatus: 200,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    };
+// Fail fast in production if ALLOWED_ORIGINS is not set
+if (isProduction && prodOrigins.length === 0) {
+  logger.error('FATAL: ALLOWED_ORIGINS must be set in production');
+  logger.error('Example: ALLOWED_ORIGINS=https://yourdomain.com,https://admin.yourdomain.com');
+  process.exit(1);
+}
+
+const allowedOrigins = isProduction ? prodOrigins : devOrigins;
+
+// CORS options
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+    if (!origin) return callback(null, true);
+
+    // In development, allow all origins for easier testing
+    if (isDevelopment) {
+      return callback(null, true);
+    }
+
+    // In production, strictly check against allowed origins
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      logger.warn('CORS blocked request', { origin, allowedOrigins });
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
 
 app.use(cors(corsOptions));
 
@@ -91,11 +109,7 @@ app.get('/api/health', (req, res) => {
     success: true,
     message: 'RestOh API is running!',
     timestamp: new Date().toISOString(),
-    cors: {
-      origin: req.headers.origin,
-      allowedOrigins: allowedOrigins,
-      environment: process.env.NODE_ENV
-    }
+    environment: process.env.NODE_ENV
   });
 });
 
