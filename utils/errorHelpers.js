@@ -143,6 +143,57 @@ const createEmailNotVerifiedError = () => {
   };
 };
 
+/**
+ * Create a no refresh token error
+ * @returns {Object} Structured error response
+ */
+const createNoRefreshTokenError = () => {
+  return {
+    success: false,
+    error: 'No refresh token provided',
+    code: ERROR_CODES.AUTH_NO_REFRESH_TOKEN,
+    details: {
+      message: 'A refresh token is required to obtain a new access token.',
+      suggestion: 'Please log in again to obtain new tokens.',
+      action: 'redirect-to-login'
+    }
+  };
+};
+
+/**
+ * Create an invalid refresh token error
+ * @returns {Object} Structured error response
+ */
+const createInvalidRefreshTokenError = () => {
+  return {
+    success: false,
+    error: 'Invalid or expired refresh token',
+    code: ERROR_CODES.AUTH_INVALID_REFRESH_TOKEN,
+    details: {
+      message: 'Your session has expired or been revoked.',
+      suggestion: 'Please log in again.',
+      action: 'redirect-to-login'
+    }
+  };
+};
+
+/**
+ * Create an access token expired error
+ * @returns {Object} Structured error response
+ */
+const createAccessTokenExpiredError = () => {
+  return {
+    success: false,
+    error: 'Access token expired',
+    code: ERROR_CODES.AUTH_TOKEN_EXPIRED,
+    details: {
+      message: 'Your access token has expired.',
+      suggestion: 'Call the refresh endpoint to obtain a new access token.',
+      action: 'call-refresh'
+    }
+  };
+};
+
 // ========================================
 // RESERVATION ERRORS
 // ========================================
@@ -880,6 +931,9 @@ module.exports = {
   createAccountInactiveError,
   createAccountLockedError,
   createEmailNotVerifiedError,
+  createNoRefreshTokenError,
+  createInvalidRefreshTokenError,
+  createAccessTokenExpiredError,
 
   // User Management
   createUserNotFoundError,

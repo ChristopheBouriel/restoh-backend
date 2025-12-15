@@ -10,8 +10,51 @@ const {
   createEmailExistsError,
   createAccountDeletedError,
   createAccountInactiveError,
-  createAccountLockedError
+  createAccountLockedError,
+  createNoRefreshTokenError,
+  createInvalidRefreshTokenError,
 } = require('../utils/errorHelpers');
+const {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+  revokeRefreshToken,
+  revokeAllUserTokens,
+  setRefreshTokenCookie,
+  clearRefreshTokenCookie,
+} = require('../utils/tokenUtils');
+
+/**
+ * Send dual token response (Access Token + Refresh Token)
+ * - Access Token: Short-lived JWT (15 min) returned in response body
+ * - Refresh Token: Long-lived token (7 days) stored in HttpOnly cookie + DB
+ *
+ * @param {Object} user - User document
+ * @param {number} statusCode - HTTP status code
+ * @param {Object} res - Express response object
+ * @param {Object} req - Express request object (for refresh token metadata)
+ * @param {string} message - Response message
+ */
+const sendDualTokenResponse = async (user, statusCode, res, req, message = 'Success') => {
+  // Generate short-lived access token (15 min)
+  const accessToken = generateAccessToken(user._id);
+
+  // Generate long-lived refresh token and store in DB
+  const refreshToken = await generateRefreshToken(user._id, req);
+
+  // Set refresh token in HttpOnly cookie
+  setRefreshTokenCookie(res, refreshToken);
+
+  // Convert Mongoose document to JSON to apply toJSON transform
+  const userJSON = user.toJSON ? user.toJSON() : user;
+
+  res.status(statusCode).json({
+    success: true,
+    message,
+    accessToken, // Frontend stores in memory (NOT localStorage)
+    user: userJSON,
+  });
+};
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -57,7 +100,7 @@ const register = asyncHandler(async (req, res) => {
     // Don't fail registration if email fails, user can request resend
   }
 
-  sendTokenResponse(user, 201, res, 'User registered successfully. Please check your email to verify your account.');
+  await sendDualTokenResponse(user, 201, res, req, 'User registered successfully. Please check your email to verify your account.');
 });
 
 // @desc    Login user
@@ -129,7 +172,7 @@ const login = asyncHandler(async (req, res) => {
   // Update last login
   await user.updateLastLogin();
 
-  sendTokenResponse(user, 200, res, 'Login successful');
+  await sendDualTokenResponse(user, 200, res, req, 'Login successful');
 });
 
 // @desc    Get current logged in user
@@ -316,6 +359,36 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Refresh access token using refresh token
+// @route   POST /api/auth/refresh
+// @access  Public (uses refresh token cookie, not access token)
+const refreshTokenHandler = asyncHandler(async (req, res) => {
+  // 1. Get refresh token from cookie
+  const refreshToken = req.cookies?.refreshToken;
+
+  if (!refreshToken) {
+    const errorResponse = createNoRefreshTokenError();
+    return res.status(401).json(errorResponse);
+  }
+
+  // 2. Verify refresh token in database
+  const storedToken = await verifyRefreshToken(refreshToken);
+
+  if (!storedToken) {
+    const errorResponse = createInvalidRefreshTokenError();
+    return res.status(401).json(errorResponse);
+  }
+
+  // 3. Generate new access token
+  const accessToken = generateAccessToken(storedToken.userId);
+
+  // 4. Return new access token
+  res.status(200).json({
+    success: true,
+    accessToken,
+  });
+});
+
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Private
@@ -441,6 +514,7 @@ module.exports = {
   getMe,
   updateProfileUser,
   changePassword,
+  refreshTokenHandler,
   logout,
   deleteAccount,
 };

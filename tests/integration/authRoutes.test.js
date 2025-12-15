@@ -37,9 +37,13 @@ describe('Auth Routes Integration Tests', () => {
 
       expect(res.body.success).toBe(true);
       expect(res.body.message).toContain('registered successfully');
-      // Token is in cookie, not body
+      // Access token is in body (short-lived, 15 min)
+      expect(res.body.accessToken).toBeDefined();
+      expect(typeof res.body.accessToken).toBe('string');
+      // Refresh token is in HttpOnly cookie (long-lived, 7 days)
       expect(res.headers['set-cookie']).toBeDefined();
-      expect(res.headers['set-cookie'][0]).toContain('token=');
+      expect(res.headers['set-cookie'][0]).toContain('refreshToken=');
+      expect(res.headers['set-cookie'][0]).toContain('HttpOnly');
       expect(res.body.user).toBeDefined();
       expect(res.body.user.email).toBe(newUser.email);
       // Note: Password might be returned depending on toJSON transform
@@ -121,9 +125,13 @@ describe('Auth Routes Integration Tests', () => {
 
       expect(res.body.success).toBe(true);
       expect(res.body.message).toBe('Login successful');
-      // Token is in cookie, not body
+      // Access token is in body (short-lived, 15 min)
+      expect(res.body.accessToken).toBeDefined();
+      expect(typeof res.body.accessToken).toBe('string');
+      // Refresh token is in HttpOnly cookie (long-lived, 7 days)
       expect(res.headers['set-cookie']).toBeDefined();
-      expect(res.headers['set-cookie'][0]).toContain('token=');
+      expect(res.headers['set-cookie'][0]).toContain('refreshToken=');
+      expect(res.headers['set-cookie'][0]).toContain('HttpOnly');
       expect(res.body.user).toBeDefined();
     });
 

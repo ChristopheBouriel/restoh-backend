@@ -5,6 +5,7 @@ const {
   getMe,
   updateProfileUser,
   changePassword,
+  refreshTokenHandler,
   logout,
   deleteAccount,
 } = require('../controllers/authController');
@@ -16,6 +17,9 @@ const router = express.Router();
 // Public routes with strict rate limiting
 router.post('/register', strictLimiter, register);
 router.post('/login', authLimiter, login);
+
+// Refresh token route (public - uses refresh token cookie, not access token)
+router.post('/refresh', authLimiter, refreshTokenHandler);
 
 // Protected routes
 router.use(protect); // All routes after this middleware are protected
