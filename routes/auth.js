@@ -7,6 +7,7 @@ const {
   changePassword,
   refreshTokenHandler,
   logout,
+  logoutAll,
   deleteAccount,
 } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
@@ -28,6 +29,7 @@ router.get('/me', getMe);
 router.put('/profile', updateProfileUser);
 router.put('/change-password', changePassword);
 router.post('/logout', logout);
+router.post('/logout-all', logoutAll);
 router.delete('/delete-account', deleteAccount);
 
 module.exports = router;

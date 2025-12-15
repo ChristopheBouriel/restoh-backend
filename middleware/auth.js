@@ -1,18 +1,21 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { createEmailNotVerifiedError } = require('../utils/errorHelpers');
+const {
+  createEmailNotVerifiedError,
+  createAccessTokenExpiredError,
+} = require('../utils/errorHelpers');
 
-// Protect routes - verify JWT token
+// Protect routes - verify JWT access token
 const protect = async (req, res, next) => {
   let token;
 
-  // Check for token in cookies first (secure method)
-  if (req.cookies.token) {
-    token = req.cookies.token;
-  }
-  // Fallback to authorization header for backward compatibility
-  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // Primary: Authorization header with Bearer token (new system)
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  }
+  // Fallback: Check for legacy token cookie (deprecated, for backward compatibility)
+  else if (req.cookies.token) {
+    token = req.cookies.token;
   }
 
   // Make sure token exists
@@ -50,6 +53,13 @@ const protect = async (req, res, next) => {
 
     next();
   } catch (error) {
+    // Handle specific JWT errors
+    if (error.name === 'TokenExpiredError') {
+      // Return specific code so frontend knows to call /api/auth/refresh
+      const errorResponse = createAccessTokenExpiredError();
+      return res.status(401).json(errorResponse);
+    }
+
     return res.status(401).json({
       success: false,
       message: 'Not authorized to access this route',
@@ -61,13 +71,13 @@ const protect = async (req, res, next) => {
 const optionalAuth = async (req, res, next) => {
   let token;
 
-  // Check for token in cookies first
-  if (req.cookies.token) {
-    token = req.cookies.token;
-  }
-  // Fallback to authorization header
-  else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // Primary: Authorization header with Bearer token (new system)
+  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
+  }
+  // Fallback: Check for legacy token cookie (deprecated)
+  else if (req.cookies.token) {
+    token = req.cookies.token;
   }
 
   // If no token or token is 'none', just continue without setting req.user

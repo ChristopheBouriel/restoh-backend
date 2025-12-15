@@ -393,11 +393,39 @@ const refreshTokenHandler = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private
 const logout = asyncHandler(async (req, res) => {
+  // Revoke refresh token in database (if present)
+  const refreshToken = req.cookies?.refreshToken;
+  if (refreshToken) {
+    await revokeRefreshToken(refreshToken);
+  }
+
+  // Clear both cookies (refresh token + legacy token)
+  clearRefreshTokenCookie(res);
   clearTokenCookie(res);
 
   res.status(200).json({
     success: true,
     message: 'Logged out successfully',
+  });
+});
+
+// @desc    Logout from all devices
+// @route   POST /api/auth/logout-all
+// @access  Private
+const logoutAll = asyncHandler(async (req, res) => {
+  // Revoke ALL refresh tokens for this user
+  const revokedCount = await revokeAllUserTokens(req.user._id);
+
+  // Clear cookies on current device
+  clearRefreshTokenCookie(res);
+  clearTokenCookie(res);
+
+  res.status(200).json({
+    success: true,
+    message: 'Logged out from all devices',
+    details: {
+      revokedSessions: revokedCount,
+    },
   });
 });
 
@@ -516,5 +544,6 @@ module.exports = {
   changePassword,
   refreshTokenHandler,
   logout,
+  logoutAll,
   deleteAccount,
 };
