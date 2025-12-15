@@ -4,7 +4,7 @@ Backend API for RestOh Restaurant Web Application - A comprehensive restaurant m
 
 ## 🚀 Features
 
-- **User Authentication** - JWT-based auth with role-based access control
+- **User Authentication** - Dual token system (Access + Refresh) with role-based access control
 - **Menu Management** - CRUD operations for restaurant menu items with reviews & ratings
 - **Restaurant Reviews** - Multi-category review system (service, ambiance, food, value)
 - **Order Processing** - Complete order lifecycle management
@@ -151,10 +151,13 @@ The application includes a separate review system for the restaurant itself (not
 ## 🔌 API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
+- `POST /api/auth/register` - User registration (returns accessToken + refreshToken cookie)
+- `POST /api/auth/login` - User login (returns accessToken + refreshToken cookie)
+- `POST /api/auth/refresh` - Refresh access token (uses refreshToken cookie)
+- `POST /api/auth/logout` - Logout (revokes refresh token)
+- `POST /api/auth/logout-all` - Logout from all devices (revokes all refresh tokens)
 - `GET /api/auth/me` - Get current user profile
-- `PUT /api/auth/updateprofile` - Update user profile
+- `PUT /api/auth/profile` - Update user profile
 
 ### Menu
 - `GET /api/menu` - Get all menu items (with filters & pagination)
@@ -202,11 +205,48 @@ The application includes a separate review system for the restaurant itself (not
 
 ## 🔐 Authentication
 
-The API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
+The API uses a **dual token system** for secure authentication:
+
+### Token Architecture
+
+| Token | Type | Duration | Storage | Transmission |
+|-------|------|----------|---------|--------------|
+| **Access Token** | JWT | 15 minutes | Memory (JS variable) | `Authorization: Bearer` header |
+| **Refresh Token** | Random string | 7 days | HttpOnly cookie + DB | Automatic (cookie) |
+
+### Why Dual Tokens?
+
+- **Access Token**: Short-lived, limits exposure window if stolen
+- **Refresh Token**: Stored in database, can be revoked immediately on logout
+- **True logout**: Calling `/logout` invalidates the token server-side
+
+### Authentication Endpoints
 
 ```
-Authorization: Bearer <your_jwt_token>
+POST /api/auth/login      → Returns { accessToken, user } + sets refreshToken cookie
+POST /api/auth/register   → Returns { accessToken, user } + sets refreshToken cookie
+POST /api/auth/refresh    → Returns { accessToken } (uses refresh token cookie)
+POST /api/auth/logout     → Revokes refresh token in database
+POST /api/auth/logout-all → Revokes ALL user's refresh tokens (all devices)
 ```
+
+### Error Codes
+
+| Code | Meaning | Frontend Action |
+|------|---------|-----------------|
+| `AUTH_TOKEN_EXPIRED` | Access token expired | Call `/api/auth/refresh` |
+| `AUTH_NO_REFRESH_TOKEN` | No refresh token cookie | Redirect to login |
+| `AUTH_INVALID_REFRESH_TOKEN` | Token revoked/expired | Redirect to login |
+
+### Usage
+
+Include the access token in the Authorization header:
+
+```
+Authorization: Bearer <access_token>
+```
+
+For frontend integration guide, see [docs/FRONTEND_REFRESH_TOKEN.md](./docs/FRONTEND_REFRESH_TOKEN.md).
 
 **Default Admin Account:**
 - Email: `admin@restoh.com`
@@ -236,7 +276,9 @@ Set `MONGODB_URI` in your `.env` file to connect to MongoDB.
 - **Rate Limiting** - 100 requests per 15 minutes per IP
 - **Password Hashing** - bcryptjs encryption
 - **Input Validation** - Joi schema validation
-- **JWT Authentication** - Secure token-based auth
+- **Dual Token Authentication** - Access Token (15 min) + Refresh Token (7 days, HttpOnly cookie)
+- **Token Revocation** - Server-side token invalidation on logout
+- **Password Change Detection** - Tokens invalidated after password change
 
 ## 📡 API Response Format
 

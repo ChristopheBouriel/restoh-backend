@@ -41,9 +41,29 @@ The application uses MongoDB with Mongoose ODM:
 - **Production mode**: Exits on database connection failure
 
 #### Authentication & Authorization
+- **Dual Token System** (Access Token + Refresh Token):
+  - **Access Token**: Short-lived JWT (15 min) sent in `Authorization: Bearer` header
+  - **Refresh Token**: Long-lived token (7 days) stored in HttpOnly cookie + database
 - JWT-based authentication with `middleware/auth.js`
 - Role-based access control (admin/user roles)
+- Email verification enforcement for sensitive operations
+- Token revocation on logout (stored in `RefreshToken` collection)
 - Supports temporary in-memory storage for development without database
+
+**Authentication Endpoints**:
+```
+POST /api/auth/login      → Returns { accessToken, user } + sets refreshToken cookie
+POST /api/auth/register   → Returns { accessToken, user } + sets refreshToken cookie
+POST /api/auth/refresh    → Returns { accessToken } using refresh token cookie
+POST /api/auth/logout     → Revokes refresh token in DB
+POST /api/auth/logout-all → Revokes ALL user's refresh tokens (all devices)
+```
+
+**Error Codes for Frontend**:
+- `AUTH_TOKEN_EXPIRED` → Call `/api/auth/refresh` to get new access token
+- `AUTH_NO_REFRESH_TOKEN` → Redirect to login
+- `AUTH_INVALID_REFRESH_TOKEN` → Redirect to login
+- `AUTH_EMAIL_NOT_VERIFIED` → Show email verification prompt
 
 #### API Structure
 All endpoints follow `/api/{resource}` pattern:
