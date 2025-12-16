@@ -10,7 +10,7 @@
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
 | High     | 5     | 5     | 0         |
-| Medium   | 8     | 0     | 8         |
+| Medium   | 8     | 1     | 7         |
 
 ---
 
@@ -413,7 +413,9 @@ RefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 ## Medium Issues
 
-### 10. [ ] Weak Password Policy
+### 10. [ ] Weak Password Policy ⚠️ DEFERRED
+
+> **⚠️ WARNING**: This issue is intentionally deferred during development phase to facilitate testing with simple passwords. **MUST be implemented before production deployment.**
 
 **Location**: `models/User.js`
 
@@ -467,29 +469,40 @@ if (!isValid) {
 
 ---
 
-### 11. [ ] No CSRF Protection
+### 11. [x] No CSRF Protection ✅ MITIGATED BY DESIGN
 
 **Location**: Application-wide
 
-**Issue**: No CSRF tokens for state-changing operations. While JWT in headers provides some protection, cookie-based auth scenarios are vulnerable.
+**Issue**: No CSRF tokens for state-changing operations.
 
-**Fix**:
-```bash
-npm install csurf
-```
+**Status**: Not applicable - mitigated by architecture (December 16, 2025)
 
-```javascript
-// server.js
-const csrf = require('csurf');
+**Why CSRF is not a concern with our dual token system**:
 
-// Only for cookie-based auth routes
-const csrfProtection = csrf({ cookie: true });
+1. **Access Token**: Sent via `Authorization: Bearer` header
+   - CSRF attacks cannot add custom headers to cross-origin requests
+   - Token stored in memory (not cookies), not accessible cross-origin
 
-// Apply to routes that use cookies
-app.use('/api/auth', csrfProtection, authRoutes);
-```
+2. **Refresh Token**: HttpOnly cookie with strict settings
+   ```javascript
+   {
+     httpOnly: true,
+     secure: true,           // HTTPS only in production
+     sameSite: 'strict',     // Browser blocks cross-origin requests
+     path: '/api/auth',      // Only sent to auth endpoints
+   }
+   ```
 
-**Note**: If using only Bearer token auth (no cookies), CSRF is less critical but still recommended for defense in depth.
+**OWASP compliance**:
+- `sameSite: 'strict'` is OWASP's recommended CSRF defense
+- JWT in Authorization header is inherently CSRF-resistant
+- No need for deprecated `csurf` package
+
+**Attack scenario → Failure**:
+1. Attacker creates form on `evil-site.com` targeting our API
+2. Victim visits `evil-site.com`, form auto-submits
+3. Request fails: no access token (in memory), no refresh token (sameSite blocks it)
+4. Result: 401 Unauthorized ✅
 
 ---
 
@@ -780,3 +793,4 @@ After implementing each fix:
 | 2025-12-16 | #1 | Updated | Rate limiting disabled in dev mode |
 | 2025-12-16 | - | Fixed | dotenv.config() moved before env-dependent imports |
 | 2025-12-16 | - | Fixed | Graceful error handling for unhandledRejection in dev |
+| 2025-12-16 | #11 | Mitigated | CSRF not applicable (JWT headers + sameSite cookies) |
