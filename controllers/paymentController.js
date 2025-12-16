@@ -1,9 +1,8 @@
 const Stripe = require('stripe');
 const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
+const { createPaymentIntentSchema, confirmPaymentSchema } = require('../utils/validation');
 const {
-  createInvalidAmountError,
-  createPaymentIntentIdRequiredError,
   createPaymentIntentCreationFailedError,
   createPaymentNotCompletedError,
   createPaymentConfirmationFailedError
@@ -38,12 +37,16 @@ const createStripePaymentIntent = asyncHandler(async (req, res) => {
     });
   }
 
-  const { amount, currency = 'usd' } = req.body;
-
-  if (!amount || amount <= 0) {
-    const errorResponse = createInvalidAmountError(amount);
-    return res.status(400).json(errorResponse);
+  // Validate input with Joi
+  const { error, value } = createPaymentIntentSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
   }
+
+  const { amount, currency } = value;
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -80,12 +83,16 @@ const confirmStripePayment = asyncHandler(async (req, res) => {
     });
   }
 
-  const { paymentIntentId } = req.body;
-
-  if (!paymentIntentId) {
-    const errorResponse = createPaymentIntentIdRequiredError();
-    return res.status(400).json(errorResponse);
+  // Validate input with Joi
+  const { error } = confirmPaymentSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
   }
+
+  const { paymentIntentId } = req.body;
 
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);

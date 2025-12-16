@@ -1,26 +1,26 @@
 const RestaurantReview = require('../models/RestaurantReview');
 const asyncHandler = require('../utils/asyncHandler');
+const { restaurantReviewSchema, restaurantReviewUpdateSchema } = require('../utils/validation');
 const {
   createReviewNotFoundError,
   createUnauthorizedReviewUpdateError,
   createReviewAlreadyExistsError,
-  createValidationError
 } = require('../utils/errorHelpers');
 
 // @desc    Add review for restaurant
 // @route   POST /api/restaurant/review
 // @access  Private
 const addRestaurantReview = asyncHandler(async (req, res) => {
-  const { ratings, comment, visitDate } = req.body;
-
-  // Check if overall rating is provided
-  if (!ratings || !ratings.overall || ratings.overall < 1 || ratings.overall > 5) {
-    const errorResponse = createValidationError('Overall rating is required and must be between 1 and 5', {
-      field: 'ratings.overall',
-      message: 'Overall rating is required and must be between 1 and 5'
+  // Validate input with Joi
+  const { error } = restaurantReviewSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
     });
-    return res.status(400).json(errorResponse);
   }
+
+  const { ratings, comment, visitDate } = req.body;
 
   // Check if user already reviewed the restaurant
   const existingReview = await RestaurantReview.findOne({
@@ -109,6 +109,16 @@ const getRestaurantRating = asyncHandler(async (req, res) => {
 // @access  Private
 const updateRestaurantReview = asyncHandler(async (req, res) => {
   const { id } = req.params;
+
+  // Validate input with Joi
+  const { error } = restaurantReviewUpdateSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
+  }
+
   const { ratings, comment, visitDate } = req.body;
 
   const review = await RestaurantReview.findById(id);
@@ -126,15 +136,7 @@ const updateRestaurantReview = asyncHandler(async (req, res) => {
 
   // Update ratings
   if (ratings) {
-    if (ratings.overall !== undefined) {
-      if (ratings.overall < 1 || ratings.overall > 5) {
-        const errorResponse = createValidationError('Overall rating must be between 1 and 5', {
-          field: 'ratings.overall'
-        });
-        return res.status(400).json(errorResponse);
-      }
-      review.ratings.overall = ratings.overall;
-    }
+    if (ratings.overall !== undefined) review.ratings.overall = ratings.overall;
     if (ratings.service !== undefined) review.ratings.service = ratings.service;
     if (ratings.ambiance !== undefined) review.ratings.ambiance = ratings.ambiance;
     if (ratings.food !== undefined) review.ratings.food = ratings.food;

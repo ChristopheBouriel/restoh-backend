@@ -1,8 +1,8 @@
 const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
+const { reviewUpdateSchema } = require('../utils/validation');
 const {
   createMenuItemNotFoundError,
-  createInvalidRatingError,
   createValidationError,
   createReviewNotFoundError,
   createUnauthorizedReviewUpdateError
@@ -13,13 +13,17 @@ const {
 // @access  Private
 const updateReview = asyncHandler(async (req, res) => {
   const { reviewId } = req.params;
-  const { rating, comment } = req.body;
 
-  // Validate rating if provided
-  if (rating !== undefined && (rating < 1 || rating > 5)) {
-    const errorResponse = createInvalidRatingError(rating);
-    return res.status(400).json(errorResponse);
+  // Validate input with Joi
+  const { error } = reviewUpdateSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
   }
+
+  const { rating, comment } = req.body;
 
   // Find the menu item that contains this review
   const menuItem = await MenuItem.findOne({ 'reviews._id': reviewId });

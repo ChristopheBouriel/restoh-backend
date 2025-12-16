@@ -10,7 +10,7 @@
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
 | High     | 5     | 5     | 0         |
-| Medium   | 8     | 3     | 5         |
+| Medium   | 8     | 4     | 4         |
 
 ---
 
@@ -580,49 +580,41 @@ module.exports = { logSecurityEvent };
 
 ---
 
-### 13. [ ] Missing Input Validation on Some Endpoints
+### 13. [x] Missing Input Validation on Some Endpoints ✅ FIXED
 
-**Location**: Various controllers
+**Location**: `utils/validation.js`, various controllers
 
-**Issue**: Some endpoints lack proper input validation with Joi or similar. Relying only on Mongoose validation is insufficient.
+**Issue**: Some endpoints lacked proper input validation with Joi.
 
-**Example - Missing validation**:
-```javascript
-// controllers/orderController.js - items array not validated
-const createOrder = asyncHandler(async (req, res) => {
-  const { items, orderType, ... } = req.body;
-  // No validation of items structure
-});
-```
+**Solution Implemented** (December 16, 2025):
 
-**Fix**:
-```javascript
-// validators/orderValidator.js
-const Joi = require('joi');
+Added Joi validation to all remaining controllers that were missing it:
 
-const orderItemSchema = Joi.object({
-  menuItem: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required(),
-  quantity: Joi.number().integer().min(1).max(100).required(),
-  specialInstructions: Joi.string().max(500).optional()
-});
+**New schemas added to `utils/validation.js`**:
+- `reviewUpdateSchema` - for updating menu item reviews (rating/comment optional, at least one required)
+- `restaurantReviewUpdateSchema` - for updating restaurant reviews
+- `createPaymentIntentSchema` - for Stripe payment intent creation
+- `confirmPaymentSchema` - for payment confirmation
 
-const createOrderSchema = Joi.object({
-  items: Joi.array().items(orderItemSchema).min(1).max(50).required(),
-  orderType: Joi.string().valid('pickup', 'delivery').required(),
-  deliveryAddress: Joi.when('orderType', {
-    is: 'delivery',
-    then: Joi.object({
-      street: Joi.string().required(),
-      city: Joi.string().required(),
-      postalCode: Joi.string().required()
-    }).required(),
-    otherwise: Joi.forbidden()
-  }),
-  notes: Joi.string().max(500).optional()
-});
+**Controllers updated**:
+| Controller | Function | Schema Used |
+|------------|----------|-------------|
+| `reviewController.js` | updateReview | reviewUpdateSchema |
+| `restaurantReviewController.js` | addRestaurantReview | restaurantReviewSchema |
+| `restaurantReviewController.js` | updateRestaurantReview | restaurantReviewUpdateSchema |
+| `menuController.js` | addReview | reviewSchema |
+| `paymentController.js` | createStripePaymentIntent | createPaymentIntentSchema |
+| `paymentController.js` | confirmStripePayment | confirmPaymentSchema |
 
-module.exports = { createOrderSchema };
-```
+**Complete validation coverage**:
+- ✅ Auth (register, login, profile update)
+- ✅ Orders (create)
+- ✅ Menu items (create, update)
+- ✅ Reviews (create, update) - menu items and restaurant
+- ✅ Reservations (create, update)
+- ✅ Contact (create, reply)
+- ✅ Payments (create intent, confirm)
+- ✅ Admin (user updates)
 
 ---
 
@@ -805,5 +797,6 @@ After implementing each fix:
 | 2025-12-16 | - | Fixed | Graceful error handling for unhandledRejection in dev |
 | 2025-12-16 | #11 | Mitigated | CSRF not applicable (JWT headers + sameSite cookies) |
 | 2025-12-16 | #12 | Deferred | Console logging sufficient for restaurant app |
+| 2025-12-16 | #13 | Fixed | Added Joi validation to all controllers |
 | 2025-12-16 | #14 | Fixed | Request size limited to 100kb (was 10mb) |
 | 2025-12-16 | #15 | Verified | Already implemented in errorHandler.js |

@@ -98,11 +98,17 @@ const contactSchema = Joi.object({
     status: Joi.string().valid('new', 'read', 'replied', 'newlyReplied', 'closed').optional()
 });
 
-// Review validation (menu item)
+// Review validation (menu item) - for creating new reviews
 const reviewSchema = Joi.object({
     rating: Joi.number().integer().min(1).max(5).required(),
     comment: Joi.string().max(500).allow(null, '').optional()
 });
+
+// Review update validation - rating is optional for updates
+const reviewUpdateSchema = Joi.object({
+    rating: Joi.number().integer().min(1).max(5).optional(),
+    comment: Joi.string().max(500).allow(null, '').optional()
+}).or('rating', 'comment'); // At least one field required
 
 // Restaurant review validation (multi-categories, progressive usage)
 const restaurantReviewSchema = Joi.object({
@@ -116,6 +122,19 @@ const restaurantReviewSchema = Joi.object({
     comment: Joi.string().max(500).allow(null, '').optional(),
     visitDate: Joi.date().allow(null).optional()
 });
+
+// Restaurant review update validation - ratings.overall is optional for updates
+const restaurantReviewUpdateSchema = Joi.object({
+    ratings: Joi.object({
+        overall: Joi.number().integer().min(1).max(5).optional(),
+        service: Joi.number().integer().min(1).max(5).allow(null).optional(),
+        ambiance: Joi.number().integer().min(1).max(5).allow(null).optional(),
+        food: Joi.number().integer().min(1).max(5).allow(null).optional(),
+        value: Joi.number().integer().min(1).max(5).allow(null).optional()
+    }).optional(),
+    comment: Joi.string().max(500).allow(null, '').optional(),
+    visitDate: Joi.date().allow(null).optional()
+}).or('ratings', 'comment', 'visitDate'); // At least one field required
 
 // Discussion reply validation
 const DiscussionSchema = Joi.object({
@@ -168,6 +187,16 @@ const validateAdminUserUpdate = (data) => {
   return schema.validate(data);
 };
 
+// Payment validation schemas
+const createPaymentIntentSchema = Joi.object({
+  amount: Joi.number().positive().required(),
+  currency: Joi.string().valid('usd', 'eur', 'gbp').default('usd').optional()
+});
+
+const confirmPaymentSchema = Joi.object({
+  paymentIntentId: Joi.string().required()
+});
+
 module.exports = {
   validateRegister,
   validateLogin,
@@ -176,8 +205,12 @@ module.exports = {
   validateCreateOrder,
   contactSchema,
   reviewSchema,
+  reviewUpdateSchema,
   restaurantReviewSchema,
+  restaurantReviewUpdateSchema,
   DiscussionSchema,
   validateUserUpdate,
   validateAdminUserUpdate,
+  createPaymentIntentSchema,
+  confirmPaymentSchema,
 };

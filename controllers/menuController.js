@@ -1,7 +1,7 @@
 const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const logger = require('../utils/logger');
-const { menuSchema } = require('../utils/validation');
+const { menuSchema, reviewSchema } = require('../utils/validation');
 const { deleteImage } = require('../middleware/cloudinaryUpload');
 const {
   getPopularItems: getPopularItemsFromHelper,
@@ -211,12 +211,16 @@ const deleteMenuItem = asyncHandler(async (req, res) => {
 // @route   POST /api/menu/:id/review
 // @access  Private
 const addReview = asyncHandler(async (req, res) => {
-  const { rating, comment } = req.body;
-
-  if (!rating || rating < 1 || rating > 5) {
-    const errorResponse = createInvalidRatingError(rating);
-    return res.status(400).json(errorResponse);
+  // Validate input with Joi
+  const { error } = reviewSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({
+      success: false,
+      message: error.details[0].message,
+    });
   }
+
+  const { rating, comment } = req.body;
 
   const menuItem = await MenuItem.findById(req.params.id);
 
