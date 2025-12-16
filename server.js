@@ -17,22 +17,46 @@ connectDB();
 
 const app = express();
 
-// Security middleware with relaxed img-src for development
+// Security middleware with comprehensive headers
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(helmet({
+  // Cross-Origin Resource Policy - allow cross-origin for images/assets
   crossOriginResourcePolicy: { policy: "cross-origin" },
+
+  // Content Security Policy
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
       "img-src": ["'self'", "data:", "http://localhost:3001", "https:"],
     },
   },
+
+  // HTTP Strict Transport Security - only in production with HTTPS
+  hsts: isProduction ? {
+    maxAge: 31536000,        // 1 year in seconds
+    includeSubDomains: true, // Apply to subdomains
+    preload: true,           // Allow preload list inclusion
+  } : false,
+
+  // Referrer Policy - control referrer information
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+
+  // X-Frame-Options - prevent clickjacking
+  frameguard: { action: 'deny' },
+
+  // These are enabled by default in Helmet v7, but explicit for clarity:
+  // - X-Content-Type-Options: nosniff (prevents MIME sniffing)
+  // - X-DNS-Prefetch-Control: off (privacy)
+  // - X-Download-Options: noopen (IE specific)
+  // - X-Permitted-Cross-Domain-Policies: none (Flash/PDF policies)
+  // - X-XSS-Protection: 0 (deprecated, correctly disabled)
 }));
 
 // Global rate limiting - Active in all environments (relaxed in development)
 app.use('/api/', standardLimiter);
 
 // CORS configuration - Environment-aware origins
-const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
 
 // Development origins (localhost only)

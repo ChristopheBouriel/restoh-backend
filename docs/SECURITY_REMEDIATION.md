@@ -10,7 +10,7 @@
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
 | High     | 5     | 5     | 0         |
-| Medium   | 8     | 4     | 4         |
+| Medium   | 8     | 5     | 3         |
 
 ---
 
@@ -664,37 +664,46 @@ res.status(error.statusCode || 500).json({
 
 ---
 
-### 16. [ ] No HTTP Security Headers Verification
+### 16. [x] No HTTP Security Headers Verification ✅ FIXED
 
 **Location**: `server.js`
 
-**Issue**: Helmet.js is used but configuration should be verified for completeness.
+**Issue**: Helmet.js configuration should be verified for completeness.
 
-**Fix** - Verify these headers are set:
+**Solution Implemented** (December 16, 2025):
+
+Enhanced Helmet configuration with explicit security headers:
+
 ```javascript
-const helmet = require('helmet');
-
 app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'", process.env.API_URL]
-    }
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "http://localhost:3001", "https:"],
+    },
   },
-  hsts: {
-    maxAge: 31536000,
+  // HSTS - only in production (requires HTTPS)
+  hsts: isProduction ? {
+    maxAge: 31536000,        // 1 year
     includeSubDomains: true,
-    preload: true
-  },
+    preload: true,
+  } : false,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  noSniff: true,
-  xssFilter: true,
-  frameguard: { action: 'deny' }
+  frameguard: { action: 'deny' },
 }));
 ```
+
+**Headers enabled**:
+| Header | Value | Purpose |
+|--------|-------|---------|
+| X-Content-Type-Options | nosniff | Prevent MIME sniffing |
+| X-Frame-Options | DENY | Prevent clickjacking |
+| X-DNS-Prefetch-Control | off | Privacy |
+| Referrer-Policy | strict-origin-when-cross-origin | Control referrer |
+| Strict-Transport-Security | max-age=31536000 (prod only) | Force HTTPS |
+| Content-Security-Policy | Configured | XSS protection |
+| X-XSS-Protection | 0 | Correctly disabled (deprecated) |
 
 ---
 
@@ -800,3 +809,4 @@ After implementing each fix:
 | 2025-12-16 | #13 | Fixed | Added Joi validation to all controllers |
 | 2025-12-16 | #14 | Fixed | Request size limited to 100kb (was 10mb) |
 | 2025-12-16 | #15 | Verified | Already implemented in errorHandler.js |
+| 2025-12-16 | #16 | Fixed | Enhanced Helmet config with HSTS, referrerPolicy, frameguard |
