@@ -10,6 +10,7 @@ const cookieParser = require('cookie-parser');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const { standardLimiter } = require('./middleware/rateLimiter');
+const mongoSanitize = require('./middleware/mongoSanitize');
 const logger = require('./utils/logger');
 
 // Connect to MongoDB
@@ -117,6 +118,9 @@ app.use(cors(corsOptions));
 // Body parsing middleware with size limits to prevent DoS
 app.use(express.json({ limit: '100kb' }));  // 100kb for JSON (reviews, orders, etc.)
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// MongoDB injection protection - sanitize all inputs
+app.use(mongoSanitize);
 
 // Cookie parsing middleware
 app.use(cookieParser());

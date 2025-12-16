@@ -10,7 +10,7 @@
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
 | High     | 5     | 5     | 0         |
-| Medium   | 8     | 5     | 3         |
+| Medium   | 8     | 6     | 2         |
 
 ---
 
@@ -707,35 +707,50 @@ app.use(helmet({
 
 ---
 
-### 17. [ ] MongoDB Injection Potential
+### 17. [x] MongoDB Injection Potential ✅ FIXED
 
-**Location**: Various query operations
+**Location**: `middleware/mongoSanitize.js`, `server.js`
 
-**Issue**: While Mongoose provides some protection, certain query patterns could be vulnerable.
+**Issue**: While Mongoose provides some protection, certain query patterns could be vulnerable to NoSQL injection (e.g., `{ $ne: null }` or `{ $gt: "" }` in query parameters).
 
-**Example of vulnerable pattern**:
+**Solution Implemented** (December 16, 2025):
+
+Created global sanitization middleware using `mongo-sanitize` package:
+
+**New file** (`middleware/mongoSanitize.js`):
 ```javascript
-// Potentially vulnerable if req.query.status is an object like { $ne: null }
-const orders = await Order.find({ status: req.query.status });
+const mongoSanitize = require('mongo-sanitize');
+
+const sanitizeMiddleware = (req, res, next) => {
+  if (req.body) req.body = mongoSanitize(req.body);
+  if (req.query) req.query = mongoSanitize(req.query);
+  if (req.params) req.params = mongoSanitize(req.params);
+  next();
+};
 ```
 
-**Fix**:
+**Integration** (`server.js`):
 ```javascript
-// Always sanitize and validate query parameters
-const mongo = require('mongo-sanitize');
+const mongoSanitize = require('./middleware/mongoSanitize');
 
-// Middleware to sanitize all inputs
-app.use((req, res, next) => {
-  req.body = mongo(req.body);
-  req.query = mongo(req.query);
-  req.params = mongo(req.params);
-  next();
-});
+// After body parsing middleware
+app.use(mongoSanitize);
+```
 
-// Or validate explicitly
-const status = ['pending', 'confirmed', 'completed', 'cancelled'].includes(req.query.status)
-  ? req.query.status
-  : undefined;
+**What it does**:
+- Removes any keys starting with `$` from user input
+- Removes any keys containing `.` from user input
+- Applied globally to all routes
+- Prevents injection attacks like `{ "email": { "$gt": "" } }`
+
+**Attack scenario → Blocked**:
+```javascript
+// Attacker sends: POST /api/auth/login
+{ "email": { "$gt": "" }, "password": { "$gt": "" } }
+
+// After sanitization:
+{ "email": {}, "password": {} }
+// → Login fails safely
 ```
 
 ---
@@ -810,3 +825,4 @@ After implementing each fix:
 | 2025-12-16 | #14 | Fixed | Request size limited to 100kb (was 10mb) |
 | 2025-12-16 | #15 | Verified | Already implemented in errorHandler.js |
 | 2025-12-16 | #16 | Fixed | Enhanced Helmet config with HSTS, referrerPolicy, frameguard |
+| 2025-12-16 | #17 | Fixed | MongoDB injection protection via mongo-sanitize middleware |
