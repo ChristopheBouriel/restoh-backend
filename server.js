@@ -90,9 +90,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with size limits to prevent DoS
+app.use(express.json({ limit: '100kb' }));  // 100kb for JSON (reviews, orders, etc.)
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // Cookie parsing middleware
 app.use(cookieParser());

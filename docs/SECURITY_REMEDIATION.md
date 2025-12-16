@@ -10,7 +10,7 @@
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
 | High     | 5     | 5     | 0         |
-| Medium   | 8     | 2     | 6         |
+| Medium   | 8     | 3     | 5         |
 
 ---
 
@@ -626,18 +626,24 @@ module.exports = { createOrderSchema };
 
 ---
 
-### 14. [ ] No Request Size Limits
+### 14. [x] No Request Size Limits ✅ FIXED
 
 **Location**: `server.js`
 
 **Issue**: No explicit limits on request body size. Large payloads could cause memory issues.
 
-**Fix**:
+**Solution Implemented** (December 16, 2025):
+
 ```javascript
 // server.js
-app.use(express.json({ limit: '10kb' })); // Limit JSON body to 10KB
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 ```
+
+**Why 100kb instead of 10kb**:
+- 10kb too restrictive for orders with many items + special instructions
+- 100kb is sufficient for all legitimate restaurant operations
+- Still prevents memory exhaustion attacks (was 10mb before)
 
 ---
 
@@ -799,4 +805,5 @@ After implementing each fix:
 | 2025-12-16 | - | Fixed | Graceful error handling for unhandledRejection in dev |
 | 2025-12-16 | #11 | Mitigated | CSRF not applicable (JWT headers + sameSite cookies) |
 | 2025-12-16 | #12 | Deferred | Console logging sufficient for restaurant app |
+| 2025-12-16 | #14 | Fixed | Request size limited to 100kb (was 10mb) |
 | 2025-12-16 | #15 | Verified | Already implemented in errorHandler.js |
