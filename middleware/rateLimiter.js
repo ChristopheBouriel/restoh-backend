@@ -8,10 +8,23 @@ const rateLimit = require('express-rate-limit');
  * - Moderate: For sensitive operations (payments, admin) - prevents abuse
  * - Standard: For general API routes - prevents DoS
  *
- * All limiters are active in all environments, with relaxed limits in development.
+ * In development/test: Rate limiting is DISABLED for easier testing
+ * In production: Full rate limiting is active
  */
 
 const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+
+// Log rate limiting status on module load
+if (isDev) {
+  console.log('⚡ Rate limiting DISABLED (development mode)');
+} else {
+  console.log('🛡️  Rate limiting ENABLED (production mode)');
+}
+
+/**
+ * Skip function for development - bypasses rate limiting entirely
+ */
+const skipInDev = () => isDev;
 
 /**
  * Create a standardized rate limit response
@@ -36,16 +49,17 @@ const rateLimitHandler = (req, res, next, options) => {
  * For: /api/auth/login, /api/auth/register, /api/auth/forgot-password
  *
  * Production: 5 requests per 15 minutes
- * Development: 50 requests per 15 minutes
+ * Development: DISABLED (skip all requests)
  */
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 50 : 5,
+  max: 5,
   message: 'Too many attempts. Please try again in 15 minutes.',
   standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false, // Disable `X-RateLimit-*` headers
   handler: rateLimitHandler,
   skipSuccessfulRequests: false, // Count all requests
+  skip: skipInDev, // Skip entirely in development
 });
 
 /**
@@ -53,16 +67,17 @@ const strictLimiter = rateLimit({
  * Slightly more lenient than strictLimiter but still protective
  *
  * Production: 10 requests per 15 minutes
- * Development: 100 requests per 15 minutes
+ * Development: DISABLED (skip all requests)
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 100 : 10,
+  max: 10,
   message: 'Too many login attempts. Please try again in 15 minutes.',
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
   skipSuccessfulRequests: true, // Don't count successful logins
+  skip: skipInDev, // Skip entirely in development
 });
 
 /**
@@ -70,15 +85,16 @@ const authLimiter = rateLimit({
  * For: /api/payments/*, /api/admin/*
  *
  * Production: 30 requests per 15 minutes
- * Development: 300 requests per 15 minutes
+ * Development: DISABLED (skip all requests)
  */
 const moderateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 300 : 30,
+  max: 30,
   message: 'Too many requests to this resource. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  skip: skipInDev, // Skip entirely in development
 });
 
 /**
@@ -86,15 +102,16 @@ const moderateLimiter = rateLimit({
  * For: All other /api/* routes
  *
  * Production: 100 requests per 15 minutes
- * Development: 1000 requests per 15 minutes
+ * Development: DISABLED (skip all requests)
  */
 const standardLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: isDev ? 1000 : 100,
+  max: 100,
   message: 'Too many requests. Please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  skip: skipInDev, // Skip entirely in development
 });
 
 /**
@@ -102,15 +119,16 @@ const standardLimiter = rateLimit({
  * Prevents spam on contact form
  *
  * Production: 3 requests per hour
- * Development: 30 requests per hour
+ * Development: DISABLED (skip all requests)
  */
 const contactLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: isDev ? 30 : 3,
+  max: 3,
   message: 'Too many contact requests. Please try again in an hour.',
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler,
+  skip: skipInDev, // Skip entirely in development
 });
 
 module.exports = {

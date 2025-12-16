@@ -1,16 +1,16 @@
+// Load environment variables FIRST (before any imports that depend on them)
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const { standardLimiter } = require('./middleware/rateLimiter');
 const logger = require('./utils/logger');
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();
@@ -161,11 +161,34 @@ const server = app.listen(PORT, () => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.log(`Error: ${err.message}`);
-  // Close server & exit process
+  console.error(`❌ Unhandled Promise Rejection: ${err.message}`);
+  console.error(err.stack);
+
+  // In development, log but don't crash - allows debugging
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    console.error('⚠️  Server continuing despite unhandled rejection (development mode)');
+    return;
+  }
+
+  // In production, close server & exit process
   server.close(() => {
     process.exit(1);
   });
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error(`❌ Uncaught Exception: ${err.message}`);
+  console.error(err.stack);
+
+  // In development, log but don't crash
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    console.error('⚠️  Server continuing despite uncaught exception (development mode)');
+    return;
+  }
+
+  // In production, exit immediately
+  process.exit(1);
 });
 
 module.exports = app;

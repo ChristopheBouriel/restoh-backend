@@ -36,24 +36,33 @@ const {
  * @param {string} message - Response message
  */
 const sendDualTokenResponse = async (user, statusCode, res, req, message = 'Success') => {
-  // Generate short-lived access token (15 min)
-  const accessToken = generateAccessToken(user._id);
+  try {
+    // Generate short-lived access token (15 min)
+    const accessToken = generateAccessToken(user._id);
 
-  // Generate long-lived refresh token and store in DB
-  const refreshToken = await generateRefreshToken(user._id, req);
+    // Generate long-lived refresh token and store in DB
+    const refreshToken = await generateRefreshToken(user._id, req);
 
-  // Set refresh token in HttpOnly cookie
-  setRefreshTokenCookie(res, refreshToken);
+    // Set refresh token in HttpOnly cookie
+    setRefreshTokenCookie(res, refreshToken);
 
-  // Convert Mongoose document to JSON to apply toJSON transform
-  const userJSON = user.toJSON ? user.toJSON() : user;
+    // Convert Mongoose document to JSON to apply toJSON transform
+    const userJSON = user.toJSON ? user.toJSON() : user;
 
-  res.status(statusCode).json({
-    success: true,
-    message,
-    accessToken, // Frontend stores in memory (NOT localStorage)
-    user: userJSON,
-  });
+    res.status(statusCode).json({
+      success: true,
+      message,
+      accessToken, // Frontend stores in memory (NOT localStorage)
+      user: userJSON,
+    });
+  } catch (error) {
+    logger.error('Failed to send dual token response', {
+      userId: user?._id,
+      error: error.message,
+      stack: error.stack,
+    });
+    throw error; // Re-throw to be caught by asyncHandler
+  }
 };
 
 // @desc    Register user
