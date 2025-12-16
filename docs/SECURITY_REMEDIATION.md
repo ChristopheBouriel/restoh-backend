@@ -9,7 +9,7 @@
 | Priority | Total | Fixed | Remaining |
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
-| High     | 5     | 4     | 1         |
+| High     | 5     | 5     | 0         |
 | Medium   | 8     | 0     | 8         |
 
 ---
@@ -24,17 +24,21 @@
 
 **Risk**: DoS attacks, brute-force attacks on login, API abuse.
 
-**Solution Implemented** (December 13, 2025):
+**Solution Implemented** (December 13, 2025, updated December 16, 2025):
 
-Multi-level rate limiting strategy with environment-aware limits:
+Multi-level rate limiting strategy - **DISABLED in development** for easier testing:
 
 | Limiter | Production | Development | Applied To |
 |---------|------------|-------------|------------|
-| `strictLimiter` | 5 req/15min | 50 req/15min | `/api/auth/register` |
-| `authLimiter` | 10 req/15min | 100 req/15min | `/api/auth/login` (skips successful) |
-| `moderateLimiter` | 30 req/15min | 300 req/15min | `/api/payments/*`, `/api/admin/*` |
-| `standardLimiter` | 100 req/15min | 1000 req/15min | All `/api/*` routes (global) |
-| `contactLimiter` | 3 req/hour | 30 req/hour | `POST /api/contact` |
+| `strictLimiter` | 5 req/15min | DISABLED | `/api/auth/register` |
+| `authLimiter` | 10 req/15min | DISABLED | `/api/auth/login` (skips successful) |
+| `moderateLimiter` | 30 req/15min | DISABLED | `/api/payments/*`, `/api/admin/*` |
+| `standardLimiter` | 100 req/15min | DISABLED | All `/api/*` routes (global) |
+| `contactLimiter` | 3 req/hour | DISABLED | `POST /api/contact` |
+
+**Important**: Rate limiting uses the `skip` option to bypass entirely in development/test mode. A console message confirms the status at startup:
+- `⚡ Rate limiting DISABLED (development mode)`
+- `🛡️  Rate limiting ENABLED (production mode)`
 
 **Files modified**:
 - `middleware/rateLimiter.js` - New file with all limiters
@@ -351,32 +355,59 @@ const requireEmailVerified = (req, res, next) => {
 
 ---
 
-### 9. [ ] JWT Token Not Validated for Expiration Properly
+### 9. [x] JWT Token Not Validated for Expiration Properly ✅ FIXED
 
-**Location**: `middleware/auth.js`
+**Location**: `middleware/auth.js`, `utils/tokenUtils.js`, `models/RefreshToken.js`
 
 **Issue**: While JWT expiration is set, there's no token blacklist for logout or compromised tokens. Users who "logout" can still use their token until expiration.
 
-**Fix options**:
+**Solution Implemented** (December 15, 2025):
 
-**Option A**: Short-lived tokens + refresh tokens:
+Dual Token System with database-backed refresh token revocation:
+
+**Architecture**:
+- **Access Token**: Short-lived JWT (15 min) stored in memory (NOT localStorage)
+- **Refresh Token**: Long-lived random token (7 days) stored in HttpOnly cookie + MongoDB
+
+**New model** (`models/RefreshToken.js`):
 ```javascript
-// Generate short access token (15 min) + long refresh token (7 days)
-const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15m' });
-const refreshToken = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: '7d' });
+const RefreshTokenSchema = new mongoose.Schema({
+  token: { type: String, required: true, unique: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  expiresAt: { type: Date, required: true },
+  userAgent: { type: String, default: null },
+  ip: { type: String, default: null },
+  createdAt: { type: Date, default: Date.now },
+});
+
+// TTL Index: MongoDB automatically deletes expired tokens
+RefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 ```
 
-**Option B**: Redis-based token blacklist:
-```javascript
-// On logout, add token to Redis blacklist
-await redis.set(`blacklist:${token}`, '1', 'EX', tokenRemainingTime);
+**New endpoints**:
+- `POST /api/auth/refresh` - Get new access token using refresh token cookie
+- `POST /api/auth/logout` - Revoke current refresh token
+- `POST /api/auth/logout-all` - Revoke ALL user's refresh tokens (all devices)
 
-// In auth middleware, check blacklist
-const isBlacklisted = await redis.get(`blacklist:${token}`);
-if (isBlacklisted) {
-  return res.status(401).json({ error: 'Token has been revoked' });
-}
-```
+**Error codes for frontend**:
+- `AUTH_TOKEN_EXPIRED` → Frontend should call `/api/auth/refresh`
+- `AUTH_NO_REFRESH_TOKEN` → Redirect to login
+- `AUTH_INVALID_REFRESH_TOKEN` → Redirect to login
+
+**Files created/modified**:
+- `models/RefreshToken.js` - New model for refresh tokens
+- `utils/tokenUtils.js` - Token generation and verification utilities
+- `controllers/authController.js` - Updated login/register/logout
+- `middleware/auth.js` - Returns `AUTH_TOKEN_EXPIRED` code
+- `routes/auth.js` - New refresh/logout-all endpoints
+
+**Security features**:
+- Refresh tokens are revoked on logout (stored in DB, deleted on logout)
+- Logout-all revokes ALL sessions across all devices
+- Device/IP tracking for security monitoring
+- MongoDB TTL index auto-cleans expired tokens
+
+**Tests**: `tests/integration/refreshToken.test.js` (comprehensive coverage)
 
 ---
 
@@ -745,3 +776,7 @@ After implementing each fix:
 | 2025-12-14 | #6 | Fixed | Environment-aware CORS configuration |
 | 2025-12-14 | #7 | Fixed | Account lockout after 5 failed attempts |
 | 2025-12-14 | #8 | Fixed | Email verification enforced for sensitive operations |
+| 2025-12-15 | #9 | Fixed | Dual token system (access + refresh tokens) |
+| 2025-12-16 | #1 | Updated | Rate limiting disabled in dev mode |
+| 2025-12-16 | - | Fixed | dotenv.config() moved before env-dependent imports |
+| 2025-12-16 | - | Fixed | Graceful error handling for unhandledRejection in dev |
