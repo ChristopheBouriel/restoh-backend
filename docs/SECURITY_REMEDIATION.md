@@ -10,7 +10,7 @@
 |----------|-------|-------|-----------|
 | Critical | 4     | 4     | 0         |
 | High     | 5     | 5     | 0         |
-| Medium   | 8     | 1     | 7         |
+| Medium   | 8     | 2     | 6         |
 
 ---
 
@@ -506,11 +506,28 @@ if (!isValid) {
 
 ---
 
-### 12. [ ] No Security Audit Logging
+### 12. [ ] No Security Audit Logging ⏸️ DEFERRED
+
+> **Note**: Deferred - current logging is sufficient for a restaurant application. The existing `utils/logger.js` provides sanitized console logging which can be captured by log aggregation services (CloudWatch, Datadog) in production.
 
 **Location**: Application-wide
 
-**Issue**: No logging of security-relevant events (login attempts, password changes, admin actions). Makes incident investigation difficult.
+**Issue**: No dedicated database logging of security-relevant events (login attempts, password changes, admin actions).
+
+**Current state** (December 16, 2025):
+- ✅ `utils/logger.js` provides safe, sanitized logging
+- ✅ Security events are logged to console (login, logout, errors)
+- ✅ Sensitive data automatically redacted
+- ❌ No persistent database storage of security events
+- ❌ Cannot query historical security events
+
+**Why deferred**:
+- For a restaurant website, console logging captured by cloud services is sufficient
+- Database audit logging is typically required for:
+  - SOC2/HIPAA compliance
+  - Financial applications
+  - Enterprise security requirements
+- Can be implemented later if compliance requirements change
 
 **Fix**:
 ```javascript
@@ -624,41 +641,28 @@ app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 ---
 
-### 15. [ ] Sensitive Data in Error Responses
+### 15. [x] Sensitive Data in Error Responses ✅ ALREADY IMPLEMENTED
 
 **Location**: `middleware/errorHandler.js`
 
 **Issue**: In development mode, stack traces are returned. Ensure this never happens in production.
 
-**Fix**:
+**Status**: Already implemented (verified December 16, 2025)
+
+**Current implementation** in `middleware/errorHandler.js`:
 ```javascript
-// middleware/errorHandler.js
-const errorHandler = (err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-
-  const response = {
-    success: false,
-    error: err.message || 'Server Error',
-    code: err.code || 'INTERNAL_ERROR'
-  };
-
-  // NEVER include stack trace in production
-  if (process.env.NODE_ENV === 'development') {
-    response.stack = err.stack;
-  }
-
-  // Log full error server-side
-  console.error(`[${new Date().toISOString()}] Error:`, {
-    message: err.message,
-    stack: err.stack,
-    url: req.originalUrl,
-    method: req.method,
-    userId: req.user?._id
-  });
-
-  res.status(statusCode).json(response);
-};
+res.status(error.statusCode || 500).json({
+  success: false,
+  message: error.message || 'Server Error',
+  ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+});
 ```
+
+**Security features in place**:
+- ✅ Stack traces only included in development mode
+- ✅ Uses `logger.error()` which sanitizes sensitive data
+- ✅ Generic error messages in production
+- ✅ Specific error handling for Mongoose, JWT errors
 
 ---
 
@@ -794,3 +798,5 @@ After implementing each fix:
 | 2025-12-16 | - | Fixed | dotenv.config() moved before env-dependent imports |
 | 2025-12-16 | - | Fixed | Graceful error handling for unhandledRejection in dev |
 | 2025-12-16 | #11 | Mitigated | CSRF not applicable (JWT headers + sameSite cookies) |
+| 2025-12-16 | #12 | Deferred | Console logging sufficient for restaurant app |
+| 2025-12-16 | #15 | Verified | Already implemented in errorHandler.js |
