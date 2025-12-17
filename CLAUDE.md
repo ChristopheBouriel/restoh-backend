@@ -190,12 +190,38 @@ DELETE /api/restaurant/review/:id       # Delete own review (auth)
 - **COD**: Cash on delivery option
 - Test mode configured by default (see PAYMENT_SETUP_GUIDE.md)
 
-### Security Features
-- Helmet.js for security headers
-- Rate limiting (100 requests per 15 minutes per IP)
-- CORS configuration for multiple frontend origins
+### Security Features (OWASP Top 10 2021 Compliant)
+
+**Authentication & Session**:
+- Dual token system (Access Token 15min + Refresh Token 7 days)
+- Token revocation on logout (database-backed)
+- Account lockout after 5 failed login attempts (30 min)
+- Email verification enforcement for sensitive operations
 - Password hashing with bcryptjs
-- Input validation with Joi
+
+**Input Protection**:
+- Joi schema validation on all endpoints
+- MongoDB injection protection via `mongo-sanitize` middleware
+- Request size limits (100kb max) to prevent DoS
+
+**HTTP Security**:
+- Helmet.js with comprehensive headers (HSTS, CSP, X-Frame-Options, etc.)
+- Environment-aware CORS (strict in production, permissive in dev)
+- Rate limiting with multi-level tiers (disabled in development)
+
+**Error Handling**:
+- Safe logger utility with automatic sensitive data redaction
+- Stack traces only in development mode
+- Generic error messages in production
+
+**Rate Limiting Tiers** (production only):
+| Endpoint | Limit |
+|----------|-------|
+| `/api/auth/register` | 5 req/15min |
+| `/api/auth/login` | 10 req/15min |
+| `/api/payments/*`, `/api/admin/*` | 30 req/15min |
+| All `/api/*` routes | 100 req/15min |
+| `POST /api/contact` | 3 req/hour |
 
 ### Error Handling
 - Global error handler in `middleware/errorHandler.js`

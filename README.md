@@ -269,16 +269,43 @@ Set `MONGODB_URI` in your `.env` file to connect to MongoDB.
 - **Development mode**: Logs warning and continues running if MongoDB is unavailable
 - **Production mode**: Exits on database connection failure for data integrity
 
-## 🔒 Security Features
+## 🔒 Security Features (OWASP Top 10 2021 Compliant)
 
-- **Helmet.js** - Security headers
-- **CORS** - Cross-origin resource sharing
-- **Rate Limiting** - 100 requests per 15 minutes per IP
+### Authentication & Session Management
+- **Dual Token System** - Access Token (15 min) + Refresh Token (7 days, HttpOnly cookie)
+- **Token Revocation** - Server-side invalidation on logout (database-backed)
+- **Account Lockout** - 5 failed attempts → 30 minute lockout
+- **Email Verification** - Enforced for sensitive operations (orders, payments, reviews)
 - **Password Hashing** - bcryptjs encryption
-- **Input Validation** - Joi schema validation
-- **Dual Token Authentication** - Access Token (15 min) + Refresh Token (7 days, HttpOnly cookie)
-- **Token Revocation** - Server-side token invalidation on logout
-- **Password Change Detection** - Tokens invalidated after password change
+
+### Input Protection
+- **Joi Validation** - Schema validation on all endpoints
+- **MongoDB Injection Protection** - `mongo-sanitize` middleware on all inputs
+- **Request Size Limits** - 100kb max to prevent DoS attacks
+
+### HTTP Security
+- **Helmet.js** - Comprehensive security headers:
+  - `Strict-Transport-Security` (HSTS) in production
+  - `Content-Security-Policy` (CSP)
+  - `X-Frame-Options: DENY` (clickjacking protection)
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+- **CORS** - Environment-aware (strict in production, permissive in development)
+
+### Rate Limiting (Production Only)
+| Endpoint | Limit | Purpose |
+|----------|-------|---------|
+| `/api/auth/register` | 5/15min | Prevent account spam |
+| `/api/auth/login` | 10/15min | Brute-force protection |
+| `/api/payments/*` | 30/15min | Payment abuse prevention |
+| `/api/admin/*` | 30/15min | Admin endpoint protection |
+| All `/api/*` | 100/15min | General API protection |
+| `POST /api/contact` | 3/hour | Contact form spam |
+
+### Error Handling
+- **Safe Logging** - Automatic sensitive data redaction
+- **Environment-Aware** - Stack traces only in development
+- **Generic Messages** - No sensitive info in production errors
 
 ## 📡 API Response Format
 
