@@ -441,6 +441,7 @@ const logoutAll = asyncHandler(async (req, res) => {
 // @desc    Delete user account (soft delete)
 // @route   DELETE /api/auth/delete-account
 // @access  Private
+// @body    { confirmCancelReservations?: boolean } - Required if user has active reservations
 const deleteAccount = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -463,6 +464,64 @@ const deleteAccount = asyncHandler(async (req, res) => {
   const Order = require('../models/Order');
   const Reservation = require('../models/Reservation');
   const Contact = require('../models/Contact');
+
+  // Check for unpaid delivery orders (not delivered, not cancelled) - BLOCKING
+  const unpaidDeliveryOrders = await Order.find({
+    userId: req.user._id,
+    orderType: 'delivery',
+    paymentStatus: 'pending',
+    status: { $nin: ['delivered', 'cancelled'] },
+  });
+
+  if (unpaidDeliveryOrders.length > 0) {
+    return res.status(400).json({
+      success: false,
+      code: 'UNPAID_DELIVERY_ORDERS',
+      message: 'Cannot delete account with unpaid delivery order. You can delete your account after delivery.',
+      data: {
+        count: unpaidDeliveryOrders.length,
+        orders: unpaidDeliveryOrders.map(o => ({
+          id: o._id,
+          orderNumber: o.orderNumber,
+          totalPrice: o.totalPrice,
+          status: o.status,
+        })),
+      },
+    });
+  }
+
+  // Check for active reservations (confirmed or seated) - WARNING with confirmation
+  const activeReservations = await Reservation.find({
+    userId: req.user._id,
+    status: { $in: ['confirmed', 'seated'] },
+  });
+
+  if (activeReservations.length > 0 && !req.body.confirmCancelReservations) {
+    return res.status(400).json({
+      success: false,
+      code: 'ACTIVE_RESERVATIONS_WARNING',
+      message: 'You have active reservations. If you delete your account, they will be cancelled.',
+      data: {
+        count: activeReservations.length,
+        reservations: activeReservations.map(r => ({
+          id: r._id,
+          reservationNumber: r.reservationNumber,
+          date: r.date,
+          slot: r.slot,
+          guests: r.guests,
+          status: r.status,
+        })),
+      },
+    });
+  }
+
+  // If user confirmed, cancel active reservations
+  if (activeReservations.length > 0 && req.body.confirmCancelReservations) {
+    await Reservation.updateMany(
+      { userId: req.user._id, status: { $in: ['confirmed', 'seated'] } },
+      { $set: { status: 'cancelled' } }
+    );
+  }
 
   // Generate unique deleted email using user ID to avoid duplicate key errors
   const deletedEmail = `deleted-${req.user._id}@account.com`;
