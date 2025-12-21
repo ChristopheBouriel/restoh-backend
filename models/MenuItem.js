@@ -60,7 +60,7 @@ const MenuItemSchema = new mongoose.Schema({
   preparationTime: {
     type: Number, // in minutes
     default: 15,
-    min: [1, 'Preparation time must be at least 1 minute'],
+    min: [0, 'Preparation time must be at least 1 minute'],
   },
   rating: {
     average: {

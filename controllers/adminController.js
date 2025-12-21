@@ -2,6 +2,7 @@ const MenuItem = require('../models/MenuItem');
 const asyncHandler = require('../utils/asyncHandler');
 const { createMenuItemNotFoundError } = require('../utils/errorHelpers');
 const { getDashboardStats: getStats } = require('../utils/dashboardStatsHelper');
+const { getPopularItems } = require('../utils/popularItemsHelper');
 
 // @desc    Get admin dashboard stats
 // @route   GET /api/admin/stats
@@ -43,15 +44,22 @@ const togglePopularOverride = asyncHandler(async (req, res) => {
   menuItem.isPopularOverride = !menuItem.isPopularOverride;
   await menuItem.save();
 
+  // Get updated popular items list (with replacement if item was excluded)
+  const popularItems = await getPopularItems();
+
   res.status(200).json({
     success: true,
     message: menuItem.isPopularOverride
       ? 'Menu item excluded from popular items'
       : 'Menu item included in popular items selection',
     data: {
-      id: menuItem._id,
-      name: menuItem.name,
-      isPopularOverride: menuItem.isPopularOverride,
+      toggledItem: {
+        id: menuItem._id,
+        name: menuItem.name,
+        category: menuItem.category,
+        isPopularOverride: menuItem.isPopularOverride,
+      },
+      popularItems,
     },
   });
 });
@@ -65,11 +73,15 @@ const resetAllPopularOverrides = asyncHandler(async (req, res) => {
     { $set: { isPopularOverride: false } }
   );
 
+  // Get updated popular items list after reset
+  const popularItems = await getPopularItems();
+
   res.status(200).json({
     success: true,
     message: 'All popular overrides have been reset',
     data: {
       modifiedCount: result.modifiedCount,
+      popularItems,
     },
   });
 });
