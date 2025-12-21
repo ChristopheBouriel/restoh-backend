@@ -52,11 +52,12 @@ The application uses MongoDB with Mongoose ODM:
 
 **Authentication Endpoints**:
 ```
-POST /api/auth/login      → Returns { accessToken, user } + sets refreshToken cookie
-POST /api/auth/register   → Returns { accessToken, user } + sets refreshToken cookie
-POST /api/auth/refresh    → Returns { accessToken } using refresh token cookie
-POST /api/auth/logout     → Revokes refresh token in DB
-POST /api/auth/logout-all → Revokes ALL user's refresh tokens (all devices)
+POST /api/auth/login         → Returns { accessToken, user } + sets refreshToken cookie
+POST /api/auth/register      → Returns { accessToken, user } + sets refreshToken cookie
+POST /api/auth/refresh       → Returns { accessToken } using refresh token cookie
+POST /api/auth/logout        → Revokes refresh token in DB
+POST /api/auth/logout-all    → Revokes ALL user's refresh tokens (all devices)
+DELETE /api/auth/delete-account → Soft delete user account (see Account Deletion below)
 ```
 
 **Error Codes for Frontend**:
@@ -65,18 +66,39 @@ POST /api/auth/logout-all → Revokes ALL user's refresh tokens (all devices)
 - `AUTH_INVALID_REFRESH_TOKEN` → Redirect to login
 - `AUTH_EMAIL_NOT_VERIFIED` → Show email verification prompt
 
+#### Account Deletion
+
+The `DELETE /api/auth/delete-account` endpoint performs a soft delete with safety checks:
+
+**Blocking conditions** (deletion refused):
+- `UNPAID_DELIVERY_ORDERS` → User has unpaid delivery orders. Must wait for delivery.
+
+**Warning conditions** (requires confirmation):
+- `ACTIVE_RESERVATIONS_WARNING` → User has active reservations (confirmed/seated)
+  - First call without body → Returns warning + reservation details
+  - Second call with `{ "confirmCancelReservations": true }` → Cancels reservations and deletes account
+
+**On deletion**:
+- User data anonymized (name, email, phone, address set to null/deleted-{id}@account.com)
+- Orders/Reservations/Contacts data anonymized but preserved for history
+- Active reservations cancelled (if confirmed by user)
+- Refresh tokens revoked
+
 #### API Structure
 All endpoints follow `/api/{resource}` pattern:
-- `/api/auth` - Authentication (login, register, profile)
+- `/api/auth` - Authentication (login, register, profile, account deletion)
+- `/api/email` - Email verification & password reset
 - `/api/menu` - Menu management + nested reviews endpoints
 - `/api/review` - Individual menu review operations (update, delete)
 - `/api/restaurant` - Restaurant reviews + rating statistics
-- `/api/orders` - Order processing
-- `/api/reservations` - Table reservations
+- `/api/orders` - Order processing (user & admin)
+- `/api/reservations` - Table reservations (user & admin)
+- `/api/tables` - Table management & availability
 - `/api/payments` - Payment processing (Stripe)
-- `/api/users` - User management
-- `/api/admin` - Administrative functions
-- `/api/contact` - Contact form handling
+- `/api/users` - User management (admin)
+- `/api/admin` - Administrative functions (stats, popular items, suggestions)
+- `/api/contact` - Contact form & messaging system
+- `/api/newsletter` - Newsletter & promotions (admin)
 
 #### Reviews & Ratings Architecture
 
@@ -190,6 +212,31 @@ DELETE /api/restaurant/review/:id       # Delete own review (auth)
 - **COD**: Cash on delivery option
 - Test mode configured by default (see PAYMENT_SETUP_GUIDE.md)
 
+### Popular Items & Suggestions System
+
+**Popular Items** (automatic calculation):
+- Distribution by category: 2 appetizers, 3 mains, 1 dessert, 2 beverages (8 total)
+- Based on `orderCount` (most ordered items)
+- `isPopularOverride: true` excludes item from automatic selection
+- `isPopular` is a **computed field** (not stored), calculated dynamically
+
+**Admin endpoints** (returns updated `popularItems` list after changes):
+```
+PATCH /api/admin/menu/:id/popular     → Toggle isPopularOverride
+PATCH /api/admin/menu/popular/reset   → Reset all overrides to false
+GET   /api/admin/menu/popular         → Get override status
+```
+
+**Suggestions** (manual selection by admin):
+- `isSuggested: true` marks item as restaurant suggestion
+- No limit on number of suggestions
+
+```
+PATCH /api/admin/menu/:id/suggested   → Toggle isSuggested
+GET   /api/admin/menu/suggested       → Get all suggested items
+GET   /api/menu/suggestions           → Public endpoint for suggested items
+```
+
 ### Security Features (OWASP Top 10 2021 Compliant)
 
 **Authentication & Session**:
@@ -245,6 +292,51 @@ Reviews are **embedded** within MenuItem documents:
 ### User Roles
 - **user**: Regular customers (order, reserve, profile management)
 - **admin**: Full access to all resources and admin panel
+
+### Contact & Messaging System
+
+**User features**:
+- Submit contact form (with optional authentication)
+- View own messages history
+- Reply to admin messages in discussion thread
+- Mark messages as read
+
+**Admin features**:
+- View all contact messages (with filters)
+- Update message status (new, in-progress, resolved)
+- Reply to user messages
+- Soft delete / restore messages
+
+### Newsletter System
+
+**Admin endpoints**:
+```
+POST /api/newsletter/send       → Send newsletter to subscribers
+POST /api/newsletter/promotion  → Send promotional email
+GET  /api/newsletter/stats      → Get subscription statistics
+```
+
+**Unsubscribe** (public, no auth):
+```
+GET /api/newsletter/unsubscribe/newsletter/:userId
+GET /api/newsletter/unsubscribe/promotions/:userId
+```
+
+### Tables Management
+
+**User endpoints** (authenticated):
+```
+GET /api/tables/availability   → Get table availability for a date
+GET /api/tables/available      → Get available tables for date/slot
+```
+
+**Admin endpoints**:
+```
+GET    /api/tables             → Get all tables
+GET    /api/tables/:id         → Get single table
+PUT    /api/tables/:id         → Update table
+POST   /api/tables/initialize  → Initialize default tables
+```
 
 ## Development Notes
 

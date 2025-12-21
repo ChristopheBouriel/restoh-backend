@@ -158,11 +158,19 @@ The application includes a separate review system for the restaurant itself (not
 - `POST /api/auth/logout-all` - Logout from all devices (revokes all refresh tokens)
 - `GET /api/auth/me` - Get current user profile
 - `PUT /api/auth/profile` - Update user profile
+- `DELETE /api/auth/delete-account` - Delete account (soft delete with safety checks)
+
+### Email
+- `GET /api/email/verify/:token` - Verify email address
+- `POST /api/email/resend-verification` - Resend verification email
+- `POST /api/email/forgot-password` - Request password reset
+- `POST /api/email/reset-password/:token` - Reset password with token
 
 ### Menu
 - `GET /api/menu` - Get all menu items (with filters & pagination)
 - `GET /api/menu/:id` - Get single menu item
-- `GET /api/menu/popular` - Get popular menu items
+- `GET /api/menu/popular` - Get popular menu items (auto-calculated)
+- `GET /api/menu/suggestions` - Get restaurant suggestions
 - `POST /api/menu` - Create menu item (Admin)
 - `PUT /api/menu/:id` - Update menu item (Admin)
 - `DELETE /api/menu/:id` - Delete menu item (Admin)
@@ -183,15 +191,34 @@ The application includes a separate review system for the restaurant itself (not
 
 ### Orders
 - `GET /api/orders` - Get user orders
-- `POST /api/orders` - Create new order
+- `POST /api/orders` - Create new order (requires verified email)
 - `GET /api/orders/:id` - Get specific order
-- `PUT /api/orders/:id` - Update order status
+- `DELETE /api/orders/:id` - Cancel order
+- `GET /api/orders/admin` - Get all orders (Admin)
+- `GET /api/orders/admin/recent` - Get recent orders (Admin)
+- `GET /api/orders/admin/history` - Get historical orders (Admin)
+- `GET /api/orders/stats` - Get order statistics (Admin)
+- `PATCH /api/orders/:id/status` - Update order status (Admin)
+- `DELETE /api/orders/:id/delete` - Hard delete order (Admin)
 
 ### Reservations
 - `GET /api/reservations` - Get user reservations
-- `POST /api/reservations` - Create reservation
-- `PUT /api/reservations/:id` - Update reservation
+- `POST /api/reservations` - Create reservation (requires verified email)
+- `PUT /api/reservations/:id` - Update reservation (requires verified email)
 - `DELETE /api/reservations/:id` - Cancel reservation
+- `GET /api/reservations/admin/recent` - Get recent reservations (Admin)
+- `GET /api/reservations/admin/history` - Get historical reservations (Admin)
+- `GET /api/reservations/admin/stats` - Get reservation statistics (Admin)
+- `PATCH /api/reservations/admin/:id/status` - Update reservation status (Admin)
+- `PUT /api/reservations/admin/:id` - Update reservation details (Admin)
+
+### Tables
+- `GET /api/tables/availability` - Get table availability for date (Auth)
+- `GET /api/tables/available` - Get available tables for date/slot (Auth)
+- `GET /api/tables` - Get all tables (Admin)
+- `GET /api/tables/:id` - Get single table (Admin)
+- `PUT /api/tables/:id` - Update table (Admin)
+- `POST /api/tables/initialize` - Initialize default tables (Admin)
 
 ### Payments
 - `GET /api/payments/methods` - Get available payment methods
@@ -200,8 +227,39 @@ The application includes a separate review system for the restaurant itself (not
 
 ### Admin
 - `GET /api/admin/stats` - Get dashboard statistics
-- `GET /api/admin/orders` - Get all orders
-- `GET /api/admin/users` - Get all users
+- `GET /api/admin/users/:userId/orders` - Get user's orders
+- `GET /api/admin/users/:userId/reservations` - Get user's reservations
+- `PATCH /api/admin/menu/:id/popular` - Toggle popular override (returns updated list)
+- `PATCH /api/admin/menu/popular/reset` - Reset all popular overrides
+- `GET /api/admin/menu/popular` - Get popular override status
+- `PATCH /api/admin/menu/:id/suggested` - Toggle suggested status
+- `GET /api/admin/menu/suggested` - Get all suggested items
+
+### Users (Admin)
+- `GET /api/users` - Get all users
+- `GET /api/users/stats` - Get user statistics
+- `GET /api/users/admin` - Get admin users only
+- `GET /api/users/:id` - Get single user
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
+
+### Contact
+- `POST /api/contact` - Submit contact form (rate limited)
+- `GET /api/contact/my-messages` - Get user's messages (Auth)
+- `PATCH /api/contact/:id/reply` - Reply to message (Auth)
+- `PATCH /api/contact/:id/discussion/:discussionId/status` - Mark as read (Auth)
+- `GET /api/contact/admin/messages` - Get all messages (Admin)
+- `GET /api/contact/admin/messages/deleted` - Get deleted messages (Admin)
+- `PATCH /api/contact/admin/messages/:id/status` - Update status (Admin)
+- `PATCH /api/contact/admin/messages/:id/restore` - Restore message (Admin)
+- `DELETE /api/contact/admin/messages/:id` - Soft delete message (Admin)
+
+### Newsletter (Admin)
+- `POST /api/newsletter/send` - Send newsletter
+- `POST /api/newsletter/promotion` - Send promotional email
+- `GET /api/newsletter/stats` - Get subscription statistics
+- `GET /api/newsletter/unsubscribe/newsletter/:userId` - Unsubscribe (Public)
+- `GET /api/newsletter/unsubscribe/promotions/:userId` - Unsubscribe promos (Public)
 
 ## 🔐 Authentication
 
@@ -237,6 +295,8 @@ POST /api/auth/logout-all → Revokes ALL user's refresh tokens (all devices)
 | `AUTH_TOKEN_EXPIRED` | Access token expired | Call `/api/auth/refresh` |
 | `AUTH_NO_REFRESH_TOKEN` | No refresh token cookie | Redirect to login |
 | `AUTH_INVALID_REFRESH_TOKEN` | Token revoked/expired | Redirect to login |
+| `UNPAID_DELIVERY_ORDERS` | Cannot delete account (pending delivery) | Show message, disable delete |
+| `ACTIVE_RESERVATIONS_WARNING` | Has active reservations | Show confirmation modal, resend with `confirmCancelReservations: true` |
 
 ### Usage
 
