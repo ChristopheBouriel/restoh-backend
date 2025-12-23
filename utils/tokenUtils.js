@@ -11,6 +11,7 @@ const RefreshToken = require('../models/RefreshToken');
 // Configuration with environment variable fallbacks
 const ACCESS_TOKEN_EXPIRE = process.env.ACCESS_TOKEN_EXPIRE || '15m';
 const REFRESH_TOKEN_EXPIRE_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRE_DAYS, 10) || 7;
+const SESSION_EXPIRE_HOURS = parseInt(process.env.SESSION_EXPIRE_HOURS, 10) || 24; // When rememberMe is false
 
 /**
  * Generate a short-lived access token (JWT)
@@ -26,13 +27,19 @@ const generateAccessToken = (userId) => {
 };
 
 /**
- * Generate a long-lived refresh token and store it in database
+ * Generate a refresh token and store it in database
+ * Duration depends on rememberMe option:
+ * - rememberMe: true → REFRESH_TOKEN_EXPIRE_DAYS (default 7 days)
+ * - rememberMe: false → SESSION_EXPIRE_HOURS (default 24 hours)
+ *
  * @param {string} userId - User ID
  * @param {Object} req - Express request object (for userAgent and IP)
+ * @param {boolean} rememberMe - Whether to use long-lived token
  * @returns {Promise<string>} Refresh token string
  */
-const generateRefreshToken = async (userId, req = null) => {
-  const refreshToken = await RefreshToken.createToken(userId, req, REFRESH_TOKEN_EXPIRE_DAYS);
+const generateRefreshToken = async (userId, req = null, rememberMe = true) => {
+  const expireDays = rememberMe ? REFRESH_TOKEN_EXPIRE_DAYS : SESSION_EXPIRE_HOURS / 24;
+  const refreshToken = await RefreshToken.createToken(userId, req, expireDays);
   return refreshToken.token;
 };
 
@@ -74,14 +81,19 @@ const getUserSessions = async (userId) => {
 
 /**
  * Cookie options for refresh token
+ * @param {boolean} rememberMe - Whether to use long-lived cookie
  * @returns {Object} Cookie options
  */
-const getRefreshTokenCookieOptions = () => {
+const getRefreshTokenCookieOptions = (rememberMe) => {
+  const maxAge = rememberMe
+    ? REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000
+    : SESSION_EXPIRE_HOURS * 60 * 60 * 1000;
+
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000,
+    maxAge,
     path: '/api/auth', // Only sent to auth routes
   };
 };
@@ -90,9 +102,10 @@ const getRefreshTokenCookieOptions = () => {
  * Set refresh token cookie on response
  * @param {Object} res - Express response object
  * @param {string} token - Refresh token
+ * @param {boolean} rememberMe - Whether to use long-lived cookie
  */
-const setRefreshTokenCookie = (res, token) => {
-  res.cookie('refreshToken', token, getRefreshTokenCookieOptions());
+const setRefreshTokenCookie = (res, token, rememberMe = true) => {
+  res.cookie('refreshToken', token, getRefreshTokenCookieOptions(rememberMe));
 };
 
 /**
@@ -130,6 +143,7 @@ const getTokenConfig = () => {
   return {
     accessTokenExpire: ACCESS_TOKEN_EXPIRE,
     refreshTokenExpireDays: REFRESH_TOKEN_EXPIRE_DAYS,
+    sessionExpireHours: SESSION_EXPIRE_HOURS,
   };
 };
 
@@ -158,4 +172,5 @@ module.exports = {
   getTokenConfig,
   ACCESS_TOKEN_EXPIRE,
   REFRESH_TOKEN_EXPIRE_DAYS,
+  SESSION_EXPIRE_HOURS,
 };

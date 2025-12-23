@@ -27,24 +27,27 @@ const {
 /**
  * Send dual token response (Access Token + Refresh Token)
  * - Access Token: Short-lived JWT (15 min) returned in response body
- * - Refresh Token: Long-lived token (7 days) stored in HttpOnly cookie + DB
+ * - Refresh Token: Duration depends on rememberMe option
+ *   - rememberMe: true → 7 days (default)
+ *   - rememberMe: false → 24 hours
  *
  * @param {Object} user - User document
  * @param {number} statusCode - HTTP status code
  * @param {Object} res - Express response object
  * @param {Object} req - Express request object (for refresh token metadata)
  * @param {string} message - Response message
+ * @param {boolean} rememberMe - Whether to use long-lived token (default: true for backward compatibility)
  */
-const sendDualTokenResponse = async (user, statusCode, res, req, message = 'Success') => {
+const sendDualTokenResponse = async (user, statusCode, res, req, message = 'Success', rememberMe = true) => {
   try {
     // Generate short-lived access token (15 min)
     const accessToken = generateAccessToken(user._id);
 
-    // Generate long-lived refresh token and store in DB
-    const refreshToken = await generateRefreshToken(user._id, req);
+    // Generate refresh token (duration based on rememberMe)
+    const refreshToken = await generateRefreshToken(user._id, req, rememberMe);
 
-    // Set refresh token in HttpOnly cookie
-    setRefreshTokenCookie(res, refreshToken);
+    // Set refresh token in HttpOnly cookie (duration matches token)
+    setRefreshTokenCookie(res, refreshToken, rememberMe);
 
     // Convert Mongoose document to JSON to apply toJSON transform
     const userJSON = user.toJSON ? user.toJSON() : user;
@@ -125,7 +128,7 @@ const login = asyncHandler(async (req, res) => {
     });
   }
 
-  const { email, password } = req.body;
+  const { email, password, rememberMe = false } = req.body;
 
   // Find user with password and lockout fields
   const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
@@ -181,7 +184,7 @@ const login = asyncHandler(async (req, res) => {
   // Update last login
   await user.updateLastLogin();
 
-  await sendDualTokenResponse(user, 200, res, req, 'Login successful');
+  await sendDualTokenResponse(user, 200, res, req, 'Login successful', rememberMe);
 });
 
 // @desc    Get current logged in user
