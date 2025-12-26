@@ -522,6 +522,7 @@ Error responses include actionable codes:
 
 | Document | Description |
 |----------|-------------|
+| [**Project Architecture**](docs/PROJECT_ARCHITECTURE.md) | **Complete architecture guide** — patterns, data models, flows |
 | [Payment Setup Guide](docs/PAYMENT_SETUP_GUIDE.md) | Stripe configuration for test and production |
 | [Email System](docs/EMAIL_SYSTEM.md) | Brevo setup, templates, and email architecture |
 | [Email Verification](docs/FRONTEND_EMAIL_VERIFICATION.md) | Frontend integration for email verification flow |
