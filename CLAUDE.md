@@ -13,6 +13,13 @@ This is **restOh-back**, a Node.js/Express backend API for the RestOh Restaurant
 - **Debug mode**: `npm run dev:debug` (with Node.js inspector)
 - **Environment**: Requires Node.js >=14.0.0
 
+### Testing
+- **Run all tests**: `npm test`
+- **Watch mode**: `npm run test:watch`
+- **Coverage report**: `npm run test:coverage`
+- **Integration tests only**: `npm run test:integration`
+- **Unit tests only**: `npm run test:unit`
+
 ### Database Setup
 The application uses MongoDB for data persistence:
 - **With MongoDB**: Set `MONGODB_URI` in .env file for persistent storage
@@ -20,16 +27,21 @@ The application uses MongoDB for data persistence:
 
 ## Architecture Overview
 
-### MVC Structure
+### Project Structure
 ```
 ├── config/           # Database configuration
 ├── controllers/      # Business logic handlers
-├── data/            # JSON file storage (when MongoDB unavailable)
-├── middleware/      # Authentication & error handling
-├── models/          # MongoDB schemas (Mongoose)
-├── routes/          # API endpoint definitions
-├── utils/           # Utility functions and helpers
-└── server.js        # Main application entry point
+├── middleware/       # Authentication & error handling
+├── models/           # MongoDB schemas (Mongoose)
+├── routes/           # API endpoint definitions
+├── services/         # External services (email, payments)
+│   └── email/        # Brevo email service + templates
+├── utils/            # Utility functions and helpers
+├── tests/            # Test suites
+│   ├── integration/  # API endpoint tests (14 suites)
+│   ├── unit/         # Isolated component tests
+│   └── helpers/      # Test utilities and factories
+└── server.js         # Main application entry point
 ```
 
 ### Key Architectural Patterns
@@ -210,7 +222,7 @@ DELETE /api/restaurant/review/:id       # Delete own review (auth)
 ### Payment Integration
 - **Stripe**: Card payments with webhook support
 - **COD**: Cash on delivery option
-- Test mode configured by default (see PAYMENT_SETUP_GUIDE.md)
+- Test mode configured by default (see docs/PAYMENT_SETUP_GUIDE.md)
 
 ### Popular Items & Suggestions System
 
@@ -275,6 +287,85 @@ GET   /api/menu/suggestions           → Public endpoint for suggested items
 - Async wrapper utility in `utils/asyncHandler.js`
 - Custom error response utility in `utils/errorResponse.js`
 
+## Testing
+
+### Philosophy: Integration-First Approach
+
+This project prioritizes **integration tests** over unit tests for better ROI on a REST API:
+
+| Aspect | Integration Tests | Unit Tests |
+|--------|-------------------|------------|
+| **Coverage scope** | Full request → response cycle | Single function in isolation |
+| **Real bugs caught** | Middleware, auth, validation, DB queries | Logic errors only |
+| **Maintenance** | Stable (tests behavior, not implementation) | Brittle (breaks on refactoring) |
+| **Confidence** | High (tests what users actually experience) | Medium (mocks can hide issues) |
+
+### Test Coverage
+
+```
+Coverage: 84%
+Tests:    422 total (14 integration suites + 1 unit suite)
+```
+
+| Category | Coverage | Notes |
+|----------|----------|-------|
+| **Controllers** | 87% | Business logic fully tested |
+| **Utils** | 80% | Helpers and validators |
+| **Middleware** | 53% | Auth tested, upload mocked |
+
+### Test Stack
+
+- **Jest** — Test runner with parallel execution
+- **Supertest** — HTTP assertions for Express
+- **mongodb-memory-server** — Isolated MongoDB instances per test suite
+
+Each test suite spins up its own in-memory MongoDB, ensuring:
+- No test pollution between suites
+- Parallel execution without conflicts
+- No external dependencies required
+
+### Test Structure
+
+```
+tests/
+├── integration/           # API endpoint tests
+│   ├── authRoutes.test.js
+│   ├── refreshToken.test.js
+│   ├── emailVerificationEnforcement.test.js
+│   ├── menuRoutes.test.js
+│   ├── reviewRoutes.test.js
+│   ├── restaurantReviewRoutes.test.js
+│   ├── orderRoutes.test.js
+│   ├── reservationRoutes.test.js
+│   ├── paymentRoutes.test.js
+│   ├── contactRoutes.test.js
+│   ├── tableRoutes.test.js
+│   ├── userRoutes.test.js
+│   ├── adminRoutes.test.js
+│   └── emailRoutes.test.js
+├── unit/
+│   └── rateLimiter.test.js
+└── helpers/
+    └── testHelpers.js     # User factories, token generators
+```
+
+### Writing New Tests
+
+When adding new endpoints or features:
+
+1. **Create integration test** in `tests/integration/{feature}Routes.test.js`
+2. **Use test helpers** from `tests/helpers/testHelpers.js`:
+   ```javascript
+   const { createTestUser, generateAuthToken } = require('../helpers/testHelpers');
+   ```
+3. **Mock external services** (email, payments) to avoid side effects:
+   ```javascript
+   jest.mock('../../services/email/emailService', () => ({
+     sendVerificationEmail: jest.fn().mockResolvedValue(true),
+   }));
+   ```
+4. **Test both success and error cases** for each endpoint
+
 ## Data Models
 
 ### Core Entities
@@ -282,12 +373,13 @@ GET   /api/menu/suggestions           → Public endpoint for suggested items
 - **MenuItem**: Menu items with categories, pricing, availability, **embedded reviews**
 - **Order**: Order processing with items, payment status, delivery
 - **Reservation**: Table booking system with time slots
+- **RestaurantReview**: Separate collection for restaurant-level reviews
 
 ### Reviews Data Model
 Reviews are **embedded** within MenuItem documents:
 - **One review per user per item** (UNIQUE constraint)
 - **Automatic rating calculation** via `calculateAverageRating()` method
-- **Populate user data** on read operations (firstName, lastName, avatar)
+- **Nested user object** with id and name (no populate needed)
 
 ### User Roles
 - **user**: Regular customers (order, reserve, profile management)
@@ -302,7 +394,7 @@ Reviews are **embedded** within MenuItem documents:
 - Mark messages as read
 
 **Admin features**:
-- View all contact messages (with filters)
+- View all contact messages (with filters, paginated)
 - Update message status (new, in-progress, resolved)
 - Reply to user messages
 - Soft delete / restore messages
@@ -344,6 +436,7 @@ POST   /api/tables/initialize  → Initialize default tables
 - Copy `.env.example` to `.env` and configure
 - Essential variables: `JWT_SECRET`, `JWT_EXPIRE`, `MONGODB_URI`
 - Payment gateways: `STRIPE_SECRET_KEY`
+- Email service: `BREVO_API_KEY`
 
 ### Testing Without Database
 - Application automatically handles MongoDB connection failures gracefully
@@ -365,8 +458,27 @@ Consistent response structure across all endpoints:
 }
 ```
 
+Error responses include actionable codes:
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "code": "ERROR_CODE"
+}
+```
+
 ### Development Workflow
 1. MongoDB is optional - app works with or without it
 2. Payment system starts in test mode (no real charges)
 3. CORS configured for multiple localhost ports (3000, 3001, 3002)
-4. Rate limiting applies only to `/api/` routes
+4. Rate limiting applies only to `/api/` routes (disabled in dev)
+5. Run `npm run test:watch` for TDD workflow
+
+## Documentation
+
+Additional documentation in `docs/`:
+- `PAYMENT_SETUP_GUIDE.md` - Stripe configuration
+- `EMAIL_SYSTEM.md` - Brevo setup and templates
+- `FRONTEND_EMAIL_VERIFICATION.md` - Frontend integration guide
+- `DASHBOARD_STATS_API.md` - Admin statistics endpoint
+- `POPULAR_ITEMS_SUGGESTIONS_PLAN.md` - Algorithm details
