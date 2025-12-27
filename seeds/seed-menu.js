@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
-const MenuItem = require('./models/MenuItem');
+const MenuItem = require('../models/MenuItem');
 
 // Real user IDs from database
 const users = {

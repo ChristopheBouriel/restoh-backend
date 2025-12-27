@@ -11,15 +11,9 @@ const {
 // Initialize payment gateway with environment validation
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-// Fail fast in production if Stripe key is missing
-if (!stripeSecretKey && process.env.NODE_ENV === 'production') {
-  logger.error('FATAL: STRIPE_SECRET_KEY is required in production');
-  process.exit(1);
-}
-
-// Warn in development if using without key
+// Warn if Stripe key is missing (payment endpoints will return 503)
 if (!stripeSecretKey) {
-  logger.warn('STRIPE_SECRET_KEY not set - payment endpoints will fail');
+  logger.warn('STRIPE_SECRET_KEY not set - payment endpoints will be unavailable');
 }
 
 const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
