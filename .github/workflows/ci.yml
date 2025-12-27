@@ -71,8 +71,7 @@ jobs:
           PORT: 3001
           JWT_SECRET: test-secret-for-ci
           ALLOWED_ORIGINS: http://localhost:3000
-          # No MongoDB - will fail gracefully in production mode
-          # but we just want to verify the server can parse and start
+          STRIPE_SECRET_KEY: sk_test_fake_key_for_ci
 
   docker:
     runs-on: ubuntu-latest
@@ -93,6 +92,7 @@ jobs:
             -e JWT_SECRET=test-secret \
             -e MONGODB_URI=mongodb://host.docker.internal:27017/test \
             -e ALLOWED_ORIGINS=http://localhost:3000 \
+            -e STRIPE_SECRET_KEY=sk_test_fake_key_for_ci \
             -p 3001:3001 \
             restoh-backend:test
 
