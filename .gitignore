@@ -34,3 +34,6 @@ pids
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Session notes (local development context)
+SESSION_NOTES.md
