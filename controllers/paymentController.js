@@ -43,6 +43,7 @@ const createStripePaymentIntent = asyncHandler(async (req, res) => {
     return res.status(400).json({
       success: false,
       message: error.details[0].message,
+      code: 'INVALID_AMOUNT'
     });
   }
 
@@ -89,6 +90,7 @@ const confirmStripePayment = asyncHandler(async (req, res) => {
     return res.status(400).json({
       success: false,
       message: error.details[0].message,
+      code: 'PAYMENT_INTENT_ID_REQUIRED'
     });
   }
 

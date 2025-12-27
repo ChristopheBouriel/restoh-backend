@@ -339,7 +339,7 @@ describe('Admin Routes Integration Tests', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.isPopularOverride).toBe(true);
+      expect(res.body.data.toggledItem.isPopularOverride).toBe(true);
       expect(res.body.message).toContain('excluded');
     });
 
@@ -353,7 +353,7 @@ describe('Admin Routes Integration Tests', () => {
         .expect(200);
 
       expect(res.body.success).toBe(true);
-      expect(res.body.data.isPopularOverride).toBe(false);
+      expect(res.body.data.toggledItem.isPopularOverride).toBe(false);
       expect(res.body.message).toContain('included');
     });
 

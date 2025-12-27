@@ -163,7 +163,7 @@ describe('Rate Limiter Middleware', () => {
       jest.resetModules();
     });
 
-    it('should have relaxed limits in development', () => {
+    it('should skip rate limiting entirely in development', () => {
       const { strictLimiter, standardLimiter } = require('../../middleware/rateLimiter');
 
       // Create app for each limiter
@@ -173,18 +173,19 @@ describe('Rate Limiter Middleware', () => {
       const standardApp = express();
       standardApp.use('/test', standardLimiter, (req, res) => res.json({ success: true }));
 
-      // Test strictLimiter in dev (should be 50)
+      // In dev mode, rate limiting is skipped entirely (no headers)
       return request(strictApp)
         .get('/test')
         .then((res) => {
-          expect(res.headers['ratelimit-limit']).toBe('50');
+          expect(res.status).toBe(200);
+          expect(res.headers['ratelimit-limit']).toBeUndefined();
         })
         .then(() => {
-          // Test standardLimiter in dev (should be 1000)
           return request(standardApp).get('/test');
         })
         .then((res) => {
-          expect(res.headers['ratelimit-limit']).toBe('1000');
+          expect(res.status).toBe(200);
+          expect(res.headers['ratelimit-limit']).toBeUndefined();
         });
     });
   });
