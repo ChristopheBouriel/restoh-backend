@@ -7,6 +7,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const mongoose = require('mongoose');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
 const { standardLimiter } = require('./middleware/rateLimiter');
@@ -131,14 +132,33 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 
-// Health check route
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'RestOh API is running!',
+// Health check route (production-ready for Docker/Kubernetes)
+app.get('/api/health', async (req, res) => {
+  const health = {
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
-  });
+    uptime: process.uptime(),
+    environment: process.env.NODE_ENV,
+    checks: {
+      database: 'ok'
+    }
+  };
+
+  try {
+    // Check MongoDB connection state
+    // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+    const dbState = mongoose.connection.readyState;
+    if (dbState !== 1) {
+      health.status = 'degraded';
+      health.checks.database = dbState === 0 ? 'disconnected' : 'connecting';
+    }
+  } catch (error) {
+    health.status = 'unhealthy';
+    health.checks.database = 'error';
+  }
+
+  const statusCode = health.status === 'ok' ? 200 : 503;
+  res.status(statusCode).json(health);
 });
 
 // CORS test route
