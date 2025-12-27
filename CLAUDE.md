@@ -474,6 +474,55 @@ Error responses include actionable codes:
 4. Rate limiting applies only to `/api/` routes (disabled in dev)
 5. Run `npm run test:watch` for TDD workflow
 
+## Docker
+
+L'application est containerisée et disponible sur Docker Hub :
+
+```bash
+# Image Docker
+docker pull cbouriel/restoh-backend:latest
+
+# Build local
+docker build -t restoh-backend .
+```
+
+**Fichiers Docker :**
+- `Dockerfile` : Image Node.js Alpine avec healthcheck
+- `.dockerignore` : Exclusions (node_modules, tests, docs, etc.)
+
+### Database Seeding
+
+Scripts de seed disponibles dans `seeds/` :
+
+```bash
+# Depuis le container Docker
+docker exec restoh-backend node seeds/seed-all.js
+
+# En local
+node seeds/seed-all.js
+```
+
+**Scripts disponibles :**
+- `seed-all.js` : Seed complet (toutes les collections)
+- `seed-menu.js`, `seed-users.js`, `seed-tables.js`
+- `seed-reservations.js`, `seed-orders.js`, `seed-contacts.js`
+- `seed-restaurant-reviews.js`
+
+### Stack complète avec Docker Compose
+
+Repo dédié : `restoh-docker` (https://github.com/cbouriel/restoh-docker)
+
+```bash
+git clone https://github.com/cbouriel/restoh-docker.git
+cd restoh-docker
+docker-compose up -d
+docker exec restoh-backend node seeds/seed-all.js
+```
+
+**Credentials par défaut :**
+- Admin : `admin@restoh.com` / `admin123`
+- Demo : `demo@test.com` / `123456`
+
 ## Documentation
 
 Additional documentation in `docs/`:

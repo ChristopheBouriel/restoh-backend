@@ -4,6 +4,8 @@
 
 A production-ready REST API for restaurant management, built with Node.js, Express, and MongoDB.
 
+[![CI](https://github.com/ChristopheBouriel/RestOh-back/actions/workflows/ci.yml/badge.svg)](https://github.com/ChristopheBouriel/RestOh-back/actions/workflows/ci.yml)
+[![Docker](https://img.shields.io/badge/Docker-cbouriel/restoh--backend-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/r/cbouriel/restoh-backend)
 [![Node.js](https://img.shields.io/badge/Node.js->=14.0.0-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Express](https://img.shields.io/badge/Express-4.18-000000?logo=express&logoColor=white)](https://expressjs.com/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-7.5-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/)
@@ -11,7 +13,7 @@ A production-ready REST API for restaurant management, built with Node.js, Expre
 [![Tests](https://img.shields.io/badge/Tests-422-blue)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-[Features](#-features) · [Quick Start](#-quick-start) · [API Reference](#-api-reference) · [Architecture](#-architecture) · [Testing](#-testing)
+[Features](#-features) · [Quick Start](#-quick-start) · [Docker](#-docker) · [API Reference](#-api-reference) · [Testing](#-testing)
 
 </div>
 
@@ -86,6 +88,49 @@ npm run dev
 ```
 
 The API will be available at `http://localhost:3001`
+
+---
+
+## 🐳 Docker
+
+### Quick Start with Docker Compose
+
+The easiest way to run the full stack (frontend + backend + MongoDB):
+
+```bash
+git clone https://github.com/cbouriel/restoh-docker.git
+cd restoh-docker
+cp .env.example .env
+docker-compose up -d
+
+# Seed the database
+docker exec restoh-backend node seeds/seed-all.js
+```
+
+Access:
+- **Frontend**: http://localhost:5173
+- **API**: http://localhost:3001/api
+- **Demo credentials**: `admin@restoh.com` / `admin123`
+
+### Docker Image
+
+```bash
+# Pull from Docker Hub
+docker pull cbouriel/restoh-backend:latest
+
+# Or build locally
+docker build -t restoh-backend .
+```
+
+**Image features:**
+- Alpine-based (~77MB)
+- Non-root user for security
+- Built-in healthcheck
+- Production dependencies only
+
+For detailed DevOps documentation (CI/CD, deployment, monitoring), see [docs/DEVOPS.md](docs/DEVOPS.md).
+
+---
 
 ### Available Scripts
 
@@ -523,6 +568,7 @@ Error responses include actionable codes:
 | Document | Description |
 |----------|-------------|
 | [**Project Architecture**](docs/PROJECT_ARCHITECTURE.md) | **Complete architecture guide** — patterns, data models, flows |
+| [**DevOps & CI/CD**](docs/DEVOPS.md) | Docker, GitHub Actions, deployment, monitoring |
 | [Payment Setup Guide](docs/PAYMENT_SETUP_GUIDE.md) | Stripe configuration for test and production |
 | [Email System](docs/EMAIL_SYSTEM.md) | Brevo setup, templates, and email architecture |
 | [Email Verification](docs/FRONTEND_EMAIL_VERIFICATION.md) | Frontend integration for email verification flow |

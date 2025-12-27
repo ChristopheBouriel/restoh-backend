@@ -4,12 +4,11 @@ require('dotenv').config();
 const User = require('../models/User');
 
 // Demo users with realistic data
-// Password for all users: "password123"
 const usersData = [
   {
     name: 'Admin User',
     email: 'admin@restoh.com',
-    password: 'password123',
+    password: 'admin123',
     phone: '0708778878',
     role: 'admin',
     isActive: true,
@@ -31,7 +30,7 @@ const usersData = [
   {
     name: 'Demo User',
     email: 'demo@test.com',
-    password: 'password123',
+    password: '123456',
     phone: '0655443322',
     role: 'user',
     isActive: true,
@@ -173,7 +172,10 @@ async function seedUsers() {
       console.log(`${index + 1}. ${user.name} (${user.email}) - Role: ${user.role} - Verified: ${user.isEmailVerified ? 'Yes' : 'No'}`);
     });
 
-    console.log('\n🔑 All users password: password123');
+    console.log('\n🔑 Passwords:');
+    console.log('   Admin: admin123');
+    console.log('   Demo: 123456');
+    console.log('   Others: password123');
 
     // Export user IDs for reference
     const userIds = {};

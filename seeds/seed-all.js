@@ -112,10 +112,10 @@ async function seedAll() {
     console.log(`   Restaurant Reviews: ${counts.restaurantReviews}`);
 
     console.log('\n🔑 Login credentials:');
-    console.log('   Admin:  admin@restoh.com / password123');
-    console.log('   Demo:   demo@test.com / password123');
+    console.log('   Admin:  admin@restoh.com / admin123');
+    console.log('   Demo:   demo@test.com / 123456');
     console.log('   Users:  jodie@gmail.com, kris@gmail.com, fab@gmail.com, meow@gmail.com');
-    console.log('   All passwords: password123');
+    console.log('   Other passwords: password123');
 
     await mongoose.connection.close();
     console.log('\n✅ Database seeding complete!');
