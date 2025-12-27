@@ -14,7 +14,8 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest tests/controllers",
     "test:integration": "jest tests/integration",
-    "create-admin": "node scripts/createAdmin.js"
+    "create-admin": "node scripts/createAdmin.js",
+    "seed:e2e": "node scripts/seed-e2e.js"
   },
   "keywords": [
     "restaurant",

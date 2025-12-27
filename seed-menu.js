@@ -2,305 +2,363 @@ const mongoose = require('mongoose');
 require('dotenv').config();
 const MenuItem = require('./models/MenuItem');
 
-// Sample data with isPopularOverride and isSuggested fields
+// Real user IDs from database
+const users = {
+  jodie: { id: '68f33729a91a5fc87549bcef', name: 'Jodie Falconbridge' },
+  demo: { id: '68f33822fcc63e8fd18aa2c3', name: 'Demo User' },
+  kris: { id: '691843a8096ec5c775b4fb90', name: 'Kris' },
+  meow: { id: '693eb972f74be05db2e7d79a', name: 'Meow' },
+  fab: { id: '6944e3cb8d1546420415496f', name: 'Fab' },
+  deleted1: { id: '68ff82ed11ff9124166a5a9d', name: 'Deleted User' },
+  deleted2: { id: '68ff8d66f28c3944cdd39ecc', name: 'Deleted User' }
+};
+
+// Helper to create a review
+const createReview = (userKey, rating, comment = null) => ({
+  user: {
+    id: new mongoose.Types.ObjectId(users[userKey].id),
+    name: users[userKey].name
+  },
+  rating,
+  comment,
+  createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000) // Random date within last 30 days
+});
+
+// Sample data with translations to English
 // Distribution target: 2 appetizers, 3 mains, 1 dessert, 2 beverages
 const menuData = [
-  // === APPETIZERS (need 3+ for testing, top 2 by orderCount will be popular) ===
+  // === APPETIZERS ===
   {
-    name: 'Salade César',
-    description: 'Salade romaine, croûtons croustillants, copeaux de parmesan, sauce césar maison',
+    name: 'Caesar Salad',
+    description: 'Romaine lettuce, crispy croutons, parmesan shavings, homemade caesar dressing',
     price: 12.50,
     image: 'salade-cesar.jpg',
     category: 'appetizer',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Salade romaine', 'Croûtons', 'Parmesan', 'Sauce césar'],
+    ingredients: ['Romaine lettuce', 'Croutons', 'Parmesan', 'Caesar dressing'],
     allergens: ['wheat', 'dairy', 'eggs'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 32,
-    rating: { average: 4.5, count: 18 },
-    reviews: []
+    orderCount: 8,
+    preparationTime: 10,
+    reviews: [
+      createReview('jodie', 5, 'Fresh and crispy, exactly how I like it!'),
+      createReview('kris', 4),
+      createReview('meow', 4, 'Good portion size')
+    ]
   },
   {
-    name: 'Frites Maison',
-    description: 'Pommes de terre fraîches coupées et frites, servies avec une sauce au choix',
+    name: 'Homemade Fries',
+    description: 'Fresh cut potatoes, fried to perfection, served with your choice of sauce',
     price: 5.50,
     image: 'frites-maison.jpg',
     category: 'appetizer',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Pommes de terre', 'Huile végétale', 'Sel'],
+    ingredients: ['Potatoes', 'Vegetable oil', 'Salt'],
     allergens: [],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 28,
-    rating: { average: 4.2, count: 12 },
-    reviews: []
+    orderCount: 6,
+    preparationTime: 15,
+    reviews: [
+      createReview('demo', 4, 'Crispy on the outside, fluffy inside'),
+      createReview('fab', 5)
+    ]
   },
   {
-    name: 'Soupe à l\'Oignon',
-    description: 'Soupe française traditionnelle gratinée au fromage',
+    name: 'French Onion Soup',
+    description: 'Traditional French soup topped with melted cheese',
     price: 8.50,
     image: 'soupe-oignon.jpg',
     category: 'appetizer',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Oignons', 'Bouillon', 'Pain', 'Gruyère'],
+    ingredients: ['Onions', 'Broth', 'Bread', 'Gruyère'],
     allergens: ['wheat', 'dairy'],
     isPopular: false,
     isPopularOverride: false,
-    isSuggested: true,  // Restaurant suggestion
-    orderCount: 15,
-    rating: { average: 4.3, count: 8 },
-    reviews: []
+    isSuggested: true,
+    orderCount: 4,
+    preparationTime: 20,
+    reviews: [
+      createReview('kris', 5, 'Best onion soup I\'ve had in years!'),
+      createReview('deleted1', 4)
+    ]
   },
   {
-    name: 'Bruschetta Tomates',
-    description: 'Pain grillé, tomates fraîches, basilic, ail et huile d\'olive',
+    name: 'Tomato Bruschetta',
+    description: 'Grilled bread, fresh tomatoes, basil, garlic and olive oil',
     price: 7.00,
     image: 'bruschetta.jpg',
     category: 'appetizer',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Pain ciabatta', 'Tomates', 'Basilic', 'Ail'],
+    ingredients: ['Ciabatta bread', 'Tomatoes', 'Basil', 'Garlic'],
     allergens: ['wheat'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 12,
-    rating: { average: 4.1, count: 6 },
-    reviews: []
+    orderCount: 3,
+    preparationTime: 10,
+    reviews: [
+      createReview('meow', 4)
+    ]
   },
 
-  // === MAINS (need 4+ for testing, top 3 by orderCount will be popular) ===
+  // === MAINS ===
   {
-    name: 'Burger Gourmand',
-    description: 'Pain artisanal, steak de bœuf, fromage, légumes frais, frites maison',
+    name: 'Gourmet Burger',
+    description: 'Artisan bun, beef steak, cheese, fresh vegetables, homemade fries',
     price: 18.00,
     image: 'burger-gourmand.jpg',
     category: 'main',
     cuisine: 'continental',
     isVegetarian: false,
     isAvailable: true,
-    ingredients: ['Pain burger', 'Steak de bœuf', 'Fromage cheddar', 'Salade', 'Tomates'],
+    ingredients: ['Burger bun', 'Beef steak', 'Cheddar cheese', 'Lettuce', 'Tomatoes'],
     allergens: ['wheat', 'dairy'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 67,
-    rating: { average: 4.7, count: 34 },
-    reviews: []
+    orderCount: 10,
+    preparationTime: 20,
+    reviews: [
+      createReview('fab', 5, 'Juicy patty, perfect cheese melt. Will order again!'),
+      createReview('jodie', 5),
+      createReview('demo', 4, 'Great burger, generous portions'),
+      createReview('kris', 5)
+    ]
   },
   {
-    name: 'Pizza Margherita',
-    description: 'Base tomate, mozzarella, basilic frais, huile d\'olive extra vierge',
+    name: 'Margherita Pizza',
+    description: 'Tomato base, mozzarella, fresh basil, extra virgin olive oil',
     price: 15.90,
     image: 'pizza-margherita.jpg',
     category: 'main',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Pâte à pizza', 'Sauce tomate', 'Mozzarella', 'Basilic'],
+    ingredients: ['Pizza dough', 'Tomato sauce', 'Mozzarella', 'Basil'],
     allergens: ['wheat', 'dairy'],
     isPopular: false,
     isPopularOverride: false,
-    isSuggested: true,  // Restaurant suggestion
-    orderCount: 45,
-    rating: { average: 4.8, count: 23 },
-    reviews: []
+    isSuggested: true,
+    orderCount: 9,
+    preparationTime: 18,
+    reviews: [
+      createReview('meow', 5, 'Authentic Italian taste, thin and crispy crust'),
+      createReview('deleted2', 4),
+      createReview('jodie', 5)
+    ]
   },
   {
-    name: 'Steak Frites',
-    description: 'Entrecôte grillée servie avec frites maison et sauce au poivre',
+    name: 'Steak & Fries',
+    description: 'Grilled ribeye served with homemade fries and pepper sauce',
     price: 24.00,
     image: 'steak-frites.jpg',
     category: 'main',
     cuisine: 'continental',
     isVegetarian: false,
     isAvailable: true,
-    ingredients: ['Entrecôte', 'Frites', 'Sauce poivre'],
+    ingredients: ['Ribeye', 'Fries', 'Pepper sauce'],
     allergens: ['dairy'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 38,
-    rating: { average: 4.6, count: 19 },
-    reviews: []
+    orderCount: 7,
+    preparationTime: 25,
+    reviews: [
+      createReview('kris', 4, 'Perfectly cooked medium-rare'),
+      createReview('fab', 5)
+    ]
   },
   {
-    name: 'Risotto aux Champignons',
-    description: 'Riz arborio crémeux aux champignons des bois et parmesan',
+    name: 'Mushroom Risotto',
+    description: 'Creamy arborio rice with wild mushrooms and parmesan',
     price: 16.50,
     image: 'risotto-champignons.jpg',
     category: 'main',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Riz arborio', 'Champignons', 'Parmesan', 'Bouillon'],
+    ingredients: ['Arborio rice', 'Mushrooms', 'Parmesan', 'Broth'],
     allergens: ['dairy'],
     isPopular: false,
     isPopularOverride: false,
-    isSuggested: false,
-    orderCount: 22,
-    rating: { average: 4.4, count: 11 },
-    reviews: []
+    isSuggested: true,
+    orderCount: 5,
+    preparationTime: 25,
+    reviews: [
+      createReview('jodie', 4),
+      createReview('demo', 5, 'Rich and creamy, mushrooms are fantastic')
+    ]
   },
   {
-    name: 'Saumon Grillé',
-    description: 'Filet de saumon grillé, légumes de saison et sauce citronnée',
+    name: 'Grilled Salmon',
+    description: 'Grilled salmon fillet, seasonal vegetables and lemon sauce',
     price: 22.00,
     image: 'saumon-grille.jpg',
     category: 'main',
     cuisine: 'continental',
     isVegetarian: false,
     isAvailable: true,
-    ingredients: ['Saumon', 'Légumes', 'Citron', 'Herbes'],
+    ingredients: ['Salmon', 'Vegetables', 'Lemon', 'Herbs'],
     allergens: ['fish'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 18,
-    rating: { average: 4.5, count: 9 },
-    reviews: []
+    orderCount: 4,
+    preparationTime: 20,
+    reviews: [
+      createReview('meow', 5, 'Fresh fish, nicely seasoned'),
+      createReview('deleted1', 4)
+    ]
   },
 
-  // === DESSERTS (need 2+ for testing, top 1 by orderCount will be popular) ===
+  // === DESSERTS ===
   {
     name: 'Tiramisu',
-    description: 'Dessert italien traditionnel au café et mascarpone, saupoudré de cacao',
+    description: 'Traditional Italian dessert with coffee and mascarpone, dusted with cocoa',
     price: 7.50,
     image: 'tiramisu-maison.jpg',
     category: 'dessert',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Mascarpone', 'Café', 'Biscuits à la cuillère', 'Cacao'],
+    ingredients: ['Mascarpone', 'Coffee', 'Ladyfingers', 'Cocoa'],
     allergens: ['dairy', 'eggs', 'wheat'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 23,
-    rating: { average: 4.9, count: 15 },
-    reviews: []
+    orderCount: 6,
+    preparationTime: 0,
+    reviews: [
+      createReview('fab', 5, 'Heavenly! Perfect coffee flavor'),
+      createReview('kris', 5),
+      createReview('jodie', 4)
+    ]
   },
   {
     name: 'Crème Brûlée',
-    description: 'Crème à la vanille caramélisée au chalumeau',
+    description: 'Vanilla cream caramelized with a torch',
     price: 6.50,
     image: 'creme-brulee.jpg',
     category: 'dessert',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Crème', 'Vanille', 'Sucre', 'Œufs'],
+    ingredients: ['Cream', 'Vanilla', 'Sugar', 'Eggs'],
     allergens: ['dairy', 'eggs'],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 19,
-    rating: { average: 4.7, count: 12 },
-    reviews: []
+    orderCount: 4,
+    preparationTime: 0,
+    reviews: [
+      createReview('demo', 5, 'That crack of the caramel top is so satisfying'),
+      createReview('meow', 4)
+    ]
   },
   {
-    name: 'Fondant au Chocolat',
-    description: 'Gâteau au chocolat noir avec cœur coulant',
+    name: 'Chocolate Lava Cake',
+    description: 'Dark chocolate cake with a molten center',
     price: 8.00,
     image: 'fondant-chocolat.jpg',
     category: 'dessert',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Chocolat noir', 'Beurre', 'Œufs', 'Farine'],
+    ingredients: ['Dark chocolate', 'Butter', 'Eggs', 'Flour'],
     allergens: ['dairy', 'eggs', 'wheat'],
     isPopular: false,
     isPopularOverride: false,
-    isSuggested: true,  // Restaurant suggestion
-    orderCount: 15,
-    rating: { average: 4.8, count: 10 },
-    reviews: []
+    isSuggested: true,
+    orderCount: 5,
+    preparationTime: 15,
+    reviews: [
+      createReview('kris', 5, 'The molten center is pure chocolate bliss'),
+      createReview('deleted2', 5)
+    ]
   },
 
-  // === BEVERAGES (need 3+ for testing, top 2 by orderCount will be popular) ===
+  // === BEVERAGES ===
   {
     name: 'Coca-Cola',
-    description: 'Boisson gazeuse rafraîchissante 33cl',
+    description: 'Refreshing carbonated beverage 33cl',
     price: 4.00,
     image: 'coca-cola.jpg',
     category: 'beverage',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Eau gazéifiée', 'Sucre', 'Arômes naturels'],
+    ingredients: ['Carbonated water', 'Sugar', 'Natural flavors'],
     allergens: [],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 42,
-    rating: { average: 4.0, count: 8 },
+    orderCount: 10,
+    preparationTime: 0,
     reviews: []
   },
   {
-    name: 'Jus d\'Orange Frais',
-    description: 'Jus d\'orange pressé minute',
+    name: 'Fresh Orange Juice',
+    description: 'Freshly squeezed orange juice',
     price: 5.00,
     image: 'jus-orange.jpg',
     category: 'beverage',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Oranges fraîches'],
+    ingredients: ['Fresh oranges'],
     allergens: [],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 35,
-    rating: { average: 4.6, count: 14 },
-    reviews: []
+    orderCount: 7,
+    preparationTime: 5,
+    reviews: [
+      createReview('jodie', 5, 'So fresh, you can taste the difference')
+    ]
   },
   {
-    name: 'Eau Minérale',
-    description: 'Eau minérale naturelle 50cl',
+    name: 'Mineral Water',
+    description: 'Natural mineral water 50cl',
     price: 3.00,
     image: 'eau-minerale.jpg',
     category: 'beverage',
     cuisine: 'continental',
     isVegetarian: true,
     isAvailable: true,
-    ingredients: ['Eau minérale'],
+    ingredients: ['Mineral water'],
     allergens: [],
     isPopular: false,
     isPopularOverride: false,
     isSuggested: false,
-    orderCount: 28,
-    rating: { average: 4.0, count: 5 },
+    orderCount: 8,
+    preparationTime: 0,
     reviews: []
   },
-  {
-    name: 'Café Expresso',
-    description: 'Café italien traditionnel',
-    price: 2.50,
-    image: 'cafe-expresso.jpg',
-    category: 'beverage',
-    cuisine: 'continental',
-    isVegetarian: true,
-    isAvailable: true,
-    ingredients: ['Café arabica'],
-    allergens: [],
-    isPopular: false,
-    isPopularOverride: false,
-    isSuggested: false,
-    orderCount: 55,
-    rating: { average: 4.3, count: 20 },
-    reviews: []
-  }
 ];
+
+// Calculate rating from reviews
+const calculateRating = (reviews) => {
+  if (!reviews || reviews.length === 0) {
+    return { average: 0, count: 0 };
+  }
+  const sum = reviews.reduce((acc, r) => acc + r.rating, 0);
+  return {
+    average: Math.round((sum / reviews.length) * 10) / 10,
+    count: reviews.length
+  };
+};
 
 // Function to seed the database
 async function seedMenu() {
@@ -313,14 +371,23 @@ async function seedMenu() {
     await MenuItem.deleteMany({});
     console.log('🗑️  Cleared existing menu items');
 
+    // Calculate ratings from reviews before inserting
+    const itemsWithRatings = menuData.map(item => ({
+      ...item,
+      rating: calculateRating(item.reviews)
+    }));
+
     // Insert new menu items
-    const createdItems = await MenuItem.insertMany(menuData);
+    const createdItems = await MenuItem.insertMany(itemsWithRatings);
     console.log(`✅ Created ${createdItems.length} menu items`);
 
     // Display created items
     console.log('\n📋 CREATED MENU ITEMS:');
     createdItems.forEach((item, index) => {
-      console.log(`${index + 1}. ${item.name} (${item.category}) - €${item.price} - Rating: ${item.rating.average}`);
+      const reviewInfo = item.reviews.length > 0
+        ? `Rating: ${item.rating.average} (${item.rating.count} reviews)`
+        : 'No reviews';
+      console.log(`${index + 1}. ${item.name} (${item.category}) - €${item.price} - Orders: ${item.orderCount} - ${reviewInfo}`);
     });
 
     // Close connection

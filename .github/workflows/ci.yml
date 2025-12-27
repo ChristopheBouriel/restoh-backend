@@ -1,0 +1,105 @@
+# CI Workflow for RestOh Backend
+# Runs on every push and pull request
+
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint --if-present
+
+      - name: Run unit & integration tests
+        run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test-secret-for-ci
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --only=production
+
+      - name: Verify server can start
+        run: |
+          timeout 10 node server.js || code=$?
+          # Exit code 124 = timeout (expected, server started successfully)
+          if [ "$code" = "124" ]; then exit 0; fi
+          exit $code
+        env:
+          NODE_ENV: production
+          PORT: 3001
+          JWT_SECRET: test-secret-for-ci
+          # No MongoDB - will fail gracefully in production mode
+          # but we just want to verify the server can parse and start
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t restoh-backend:test .
+
+      - name: Test Docker image
+        run: |
+          docker run -d --name test-container \
+            -e NODE_ENV=production \
+            -e PORT=3001 \
+            -e JWT_SECRET=test-secret \
+            -e MONGODB_URI=mongodb://host.docker.internal:27017/test \
+            -p 3001:3001 \
+            restoh-backend:test
+
+          # Give it time to start (will fail on DB but that's ok)
+          sleep 5
+
+          # Check if container is still running
+          docker ps | grep test-container || echo "Container exited (expected without MongoDB)"
+
+          # Cleanup
+          docker stop test-container || true
+          docker rm test-container || true

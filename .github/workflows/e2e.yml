@@ -1,0 +1,104 @@
+# E2E Tests Workflow
+# This workflow is triggered by the frontend repository when E2E tests are needed
+# It can also be triggered manually for testing
+
+name: E2E Tests (Backend)
+
+on:
+  # Manual trigger
+  workflow_dispatch:
+
+  # Trigger from frontend repo (repository_dispatch event)
+  repository_dispatch:
+    types: [e2e-tests]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      # Ephemeral MongoDB for E2E tests
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.runCommand({ping:1})'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout backend
+        uses: actions/checkout@v4
+
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/restoh-frontend
+          path: frontend
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Seed E2E database
+        env:
+          MONGODB_URI: mongodb://localhost:27017/restoh_e2e
+        run: npm run seed:e2e
+
+      - name: Start backend server
+        env:
+          NODE_ENV: test
+          PORT: 3001
+          MONGODB_URI: mongodb://localhost:27017/restoh_e2e
+          JWT_SECRET: e2e-test-secret-min-32-characters-long
+          JWT_EXPIRE: 15m
+          JWT_REFRESH_EXPIRE: 7d
+          CLIENT_URL: http://localhost:5173
+          ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+          STRIPE_SECRET_KEY: sk_test_mock
+          STRIPE_PUBLISHABLE_KEY: pk_test_mock
+        run: |
+          npm start &
+          # Wait for server to be ready
+          npx wait-on http://localhost:3001/api/health --timeout 30000
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:5173
+          VITE_API_URL: http://localhost:3001/api
+        run: |
+          npm run dev &
+          npx wait-on http://localhost:5173 --timeout 60000
+          npx playwright test --project=chromium --project=chromium-no-auth
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: frontend/e2e/test-results/
+          retention-days: 7
