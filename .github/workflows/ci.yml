@@ -70,6 +70,7 @@ jobs:
           NODE_ENV: production
           PORT: 3001
           JWT_SECRET: test-secret-for-ci
+          ALLOWED_ORIGINS: http://localhost:3000
           # No MongoDB - will fail gracefully in production mode
           # but we just want to verify the server can parse and start
 
@@ -91,6 +92,7 @@ jobs:
             -e PORT=3001 \
             -e JWT_SECRET=test-secret \
             -e MONGODB_URI=mongodb://host.docker.internal:27017/test \
+            -e ALLOWED_ORIGINS=http://localhost:3000 \
             -p 3001:3001 \
             restoh-backend:test
 
