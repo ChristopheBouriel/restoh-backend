@@ -89,10 +89,15 @@ const getRefreshTokenCookieOptions = (rememberMe) => {
     ? REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60 * 1000
     : SESSION_EXPIRE_HOURS * 60 * 60 * 1000;
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    // In production with cross-origin (frontend/backend on different domains),
+    // sameSite must be 'none' (requires secure: true)
+    // In development, 'lax' allows same-site navigation
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge,
     path: '/api/auth', // Only sent to auth routes
   };
@@ -113,10 +118,12 @@ const setRefreshTokenCookie = (res, token, rememberMe = true) => {
  * @param {Object} res - Express response object
  */
 const clearRefreshTokenCookie = (res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   res.cookie('refreshToken', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     expires: new Date(0),
     path: '/api/auth',
   });

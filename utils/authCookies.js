@@ -4,13 +4,17 @@ const sendTokenResponse = (user, statusCode, res, message = 'Success') => {
     ? user.getSignedJwtToken()
     : generateJwtToken(user.id || user._id);
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
   const options = {
     expires: new Date(
       Date.now() + (process.env.JWT_COOKIE_EXPIRE || 30) * 24 * 60 * 60 * 1000
     ),
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    // In production with cross-origin (frontend/backend on different domains),
+    // sameSite must be 'none' (requires secure: true)
+    sameSite: isProduction ? 'none' : 'lax',
   };
 
   // Convert Mongoose document to JSON to apply toJSON transform
@@ -34,11 +38,13 @@ const generateJwtToken = (userId) => {
 };
 
 const clearTokenCookie = (res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+
   res.cookie('token', 'none', {
     expires: new Date(Date.now() + 10 * 1000),
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
   });
 };
 
