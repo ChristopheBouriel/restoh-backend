@@ -19,6 +19,11 @@ connectDB();
 
 const app = express();
 
+// Trust proxy - Required for services behind reverse proxies (Render, Heroku, AWS ELB, etc.)
+// This enables express-rate-limit to correctly identify users via X-Forwarded-For header
+// Value of 1 means trust only the first proxy (the one closest to the app)
+app.set('trust proxy', 1);
+
 // Security middleware with comprehensive headers
 const isProduction = process.env.NODE_ENV === 'production';
 
