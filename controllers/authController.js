@@ -56,6 +56,7 @@ const sendDualTokenResponse = async (user, statusCode, res, req, message = 'Succ
       success: true,
       message,
       accessToken, // Frontend stores in memory (NOT localStorage)
+      refreshToken, // Also in body for Safari ITP fallback (frontend stores in localStorage if cookies blocked)
       user: userJSON,
     });
   } catch (error) {
@@ -373,10 +374,10 @@ const changePassword = asyncHandler(async (req, res) => {
 
 // @desc    Refresh access token using refresh token
 // @route   POST /api/auth/refresh
-// @access  Public (uses refresh token cookie, not access token)
+// @access  Public (uses refresh token cookie or body for Safari ITP fallback)
 const refreshTokenHandler = asyncHandler(async (req, res) => {
-  // 1. Get refresh token from cookie
-  const refreshToken = req.cookies?.refreshToken;
+  // 1. Get refresh token from cookie OR body (Safari ITP fallback)
+  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!refreshToken) {
     const errorResponse = createNoRefreshTokenError();
@@ -405,8 +406,8 @@ const refreshTokenHandler = asyncHandler(async (req, res) => {
 // @route   POST /api/auth/logout
 // @access  Private
 const logout = asyncHandler(async (req, res) => {
-  // Revoke refresh token in database (if present)
-  const refreshToken = req.cookies?.refreshToken;
+  // Revoke refresh token in database (from cookie OR body for Safari ITP fallback)
+  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
   if (refreshToken) {
     await revokeRefreshToken(refreshToken);
   }
