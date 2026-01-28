@@ -3,6 +3,7 @@ const EmailVerification = require('../models/EmailVerification');
 const PasswordReset = require('../models/PasswordReset');
 const emailService = require('../services/email/emailService');
 const asyncHandler = require('../utils/asyncHandler');
+const { buildFrontendUrl } = require('../utils/urlUtils');
 
 // @desc    Verify email with token
 // @route   GET /api/email/verify/:token
@@ -96,7 +97,7 @@ const resendVerificationEmail = asyncHandler(async (req, res) => {
   const verification = await EmailVerification.createToken(user._id, user.email);
 
   // Send verification email
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verification.token}`;
+  const verificationUrl = buildFrontendUrl(`/verify-email/${verification.token}`);
 
   try {
     await emailService.sendVerificationEmail(user.email, user.name, verificationUrl);
@@ -140,7 +141,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const resetToken = await PasswordReset.createToken(user._id, user.email);
 
   // Send password reset email
-  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken.token}`;
+  const resetUrl = buildFrontendUrl(`/reset-password/${resetToken.token}`);
 
   try {
     await emailService.sendPasswordResetEmail(user.email, user.name, resetUrl);

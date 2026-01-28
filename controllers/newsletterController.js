@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const emailService = require('../services/email/emailService');
 const asyncHandler = require('../utils/asyncHandler');
+const { buildFrontendUrl } = require('../utils/urlUtils');
 
 // @desc    Send newsletter to all subscribed users
 // @route   POST /api/newsletter/send
@@ -35,7 +36,7 @@ const sendNewsletter = asyncHandler(async (req, res) => {
     name: user.name,
     variables: {
       content,
-      unsubscribeUrl: `${process.env.FRONTEND_URL}/unsubscribe/newsletter/${user.id}`,
+      unsubscribeUrl: buildFrontendUrl(`/unsubscribe/newsletter/${user.id}`),
     },
   }));
 
@@ -87,7 +88,7 @@ const sendPromotion = asyncHandler(async (req, res) => {
     name: user.name,
     variables: {
       promotionContent,
-      unsubscribeUrl: `${process.env.FRONTEND_URL}/unsubscribe/promotions/${user.id}`,
+      unsubscribeUrl: buildFrontendUrl(`/unsubscribe/promotions/${user.id}`),
     },
   }));
 

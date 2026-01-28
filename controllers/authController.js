@@ -23,6 +23,7 @@ const {
   setRefreshTokenCookie,
   clearRefreshTokenCookie,
 } = require('../utils/tokenUtils');
+const { buildFrontendUrl } = require('../utils/urlUtils');
 
 /**
  * Send dual token response (Access Token + Refresh Token)
@@ -103,7 +104,7 @@ const register = asyncHandler(async (req, res) => {
   const verification = await EmailVerification.createToken(user._id, user.email);
 
   // Send verification email
-  const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verification.token}`;
+  const verificationUrl = buildFrontendUrl(`/verify-email/${verification.token}`);
 
   try {
     await emailService.sendVerificationEmail(user.email, user.name, verificationUrl);
