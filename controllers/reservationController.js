@@ -94,7 +94,20 @@ const createReservation = asyncHandler(async (req, res) => {
   };
 
   const reservation = new Reservation(reservationData);
-  await reservation.save();
+
+  try {
+    await reservation.save();
+  } catch (err) {
+    // Handle duplicate key error (concurrent booking)
+    if (err.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Sorry, someone just booked the same table(s) for this time slot. Please select different tables or try another time.',
+        code: 'RESERVATION_CONFLICT',
+      });
+    }
+    throw err; // Re-throw other errors to be handled by errorHandler
+  }
 
   // If tableNumber array is provided, update table bookings
   if (tableNumber && tableNumber.length > 0) {
