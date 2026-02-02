@@ -470,26 +470,29 @@ const deleteAccount = asyncHandler(async (req, res) => {
   const Reservation = require('../models/Reservation');
   const Contact = require('../models/Contact');
 
-  // Check for unpaid delivery orders (not delivered, not cancelled) - BLOCKING
-  const unpaidDeliveryOrders = await Order.find({
+  // Check for unpaid cash orders in preparation or beyond - BLOCKING
+  // Restaurant has committed resources (preparing, ready, out-for-delivery)
+  // User cannot delete account until order is delivered (and paid) or cancelled
+  const unpaidCashOrders = await Order.find({
     userId: req.user._id,
-    orderType: 'delivery',
+    paymentMethod: 'cash',
     paymentStatus: 'pending',
-    status: { $nin: ['delivered', 'cancelled'] },
+    status: { $in: ['preparing', 'ready', 'out-for-delivery'] },
   });
 
-  if (unpaidDeliveryOrders.length > 0) {
+  if (unpaidCashOrders.length > 0) {
     return res.status(400).json({
       success: false,
-      code: 'UNPAID_DELIVERY_ORDERS',
-      message: 'Cannot delete account with unpaid delivery order. You can delete your account after delivery.',
+      code: 'UNPAID_CASH_ORDERS',
+      message: 'You have cash orders currently being prepared or in delivery. You can delete your account once your order has been delivered and payment collected.',
       data: {
-        count: unpaidDeliveryOrders.length,
-        orders: unpaidDeliveryOrders.map(o => ({
+        count: unpaidCashOrders.length,
+        orders: unpaidCashOrders.map(o => ({
           id: o._id,
           orderNumber: o.orderNumber,
           totalPrice: o.totalPrice,
           status: o.status,
+          orderType: o.orderType,
         })),
       },
     });
