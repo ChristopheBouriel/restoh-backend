@@ -555,7 +555,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
     }
   );
 
-  // Anonymize user data in all contacts (main contact info)
+  // Anonymize user data in all contacts (main contact info) and close the conversation
   await Contact.updateMany(
     { userId: req.user._id },
     {
@@ -563,6 +563,7 @@ const deleteAccount = asyncHandler(async (req, res) => {
         name: null,
         email: deletedEmail,
         phone: null,
+        status: 'closed',
       }
     }
   );
