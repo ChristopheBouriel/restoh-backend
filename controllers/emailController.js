@@ -21,16 +21,7 @@ const verifyEmail = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if token is still valid
-  if (!verification.isValid()) {
-    await verification.deleteOne();
-    return res.status(400).json({
-      success: false,
-      message: 'Verification token has expired. Please request a new one.',
-    });
-  }
-
-  // Find user and verify email
+  // Find user first (needed for all cases)
   const user = await User.findById(verification.userId);
 
   if (!user) {
@@ -40,8 +31,32 @@ const verifyEmail = asyncHandler(async (req, res) => {
     });
   }
 
+  // If token was already used, check if user is verified (handles Safari double-clicks)
+  if (verification.used) {
+    if (user.isEmailVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'Email already verified',
+      });
+    }
+    // Token used but user not verified - shouldn't happen, but handle it
+    return res.status(400).json({
+      success: false,
+      message: 'This verification link has already been used. Please request a new one.',
+    });
+  }
+
+  // Check if token has expired
+  if (verification.expiresAt < new Date()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Verification token has expired. Please request a new one.',
+    });
+  }
+
+  // User already verified (e.g., via another token)
   if (user.isEmailVerified) {
-    await verification.deleteOne();
+    await verification.markAsUsed();
     return res.status(200).json({
       success: true,
       message: 'Email already verified',
@@ -52,8 +67,8 @@ const verifyEmail = asyncHandler(async (req, res) => {
   user.isEmailVerified = true;
   await user.save();
 
-  // Delete verification token
-  await verification.deleteOne();
+  // Mark token as used (not delete - allows graceful handling of Safari double-calls)
+  await verification.markAsUsed();
 
   res.status(200).json({
     success: true,
