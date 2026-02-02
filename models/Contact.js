@@ -95,6 +95,16 @@ const ContactSchema = new mongoose.Schema({
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
+      // Transform discussion subdocuments to include id
+      if (ret.discussion && Array.isArray(ret.discussion)) {
+        ret.discussion = ret.discussion.map(msg => {
+          if (msg._id) {
+            msg.id = msg._id;
+            delete msg._id;
+          }
+          return msg;
+        });
+      }
       return ret;
     }
   },
@@ -104,6 +114,16 @@ const ContactSchema = new mongoose.Schema({
       ret.id = ret._id;
       delete ret._id;
       delete ret.__v;
+      // Transform discussion subdocuments to include id
+      if (ret.discussion && Array.isArray(ret.discussion)) {
+        ret.discussion = ret.discussion.map(msg => {
+          if (msg._id) {
+            msg.id = msg._id;
+            delete msg._id;
+          }
+          return msg;
+        });
+      }
       return ret;
     }
   }
