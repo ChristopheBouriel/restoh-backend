@@ -83,7 +83,7 @@ DELETE /api/auth/delete-account → Soft delete user account (see Account Deleti
 The `DELETE /api/auth/delete-account` endpoint performs a soft delete with safety checks:
 
 **Blocking conditions** (deletion refused):
-- `UNPAID_DELIVERY_ORDERS` → User has unpaid delivery orders. Must wait for delivery.
+- `UNPAID_CASH_ORDERS` → User has unpaid cash orders in preparation, ready, or out-for-delivery status. Restaurant has committed resources, user must wait for delivery and payment collection.
 
 **Warning conditions** (requires confirmation):
 - `ACTIVE_RESERVATIONS_WARNING` → User has active reservations (confirmed/seated)
@@ -523,6 +523,22 @@ docker exec restoh-backend node seeds/seed-all.js
 - Admin : `admin@restoh.com` / `admin123`
 - Demo : `demo@test.com` / `123456`
 
+## Safari/iOS Compatibility
+
+### ITP (Intelligent Tracking Prevention) Workarounds
+
+Safari blocks third-party cookies in cross-origin scenarios. The following workarounds are implemented on the `fix/safari-itp-localstorage-fallback` branch:
+
+**Backend changes:**
+- `server.js`: `app.set('trust proxy', 1)` for Render reverse proxy
+- `utils/tokenUtils.js` & `utils/authCookies.js`: `sameSite: 'none'` in production
+- `controllers/authController.js`: Refresh token also returned in response body (not just cookie)
+- Login, refresh, and logout endpoints accept refresh token from request body as fallback
+
+**Email verification double-call handling:**
+- `controllers/emailController.js`: Uses `markAsUsed()` instead of `deleteOne()` after verification
+- Handles Safari double-calls gracefully (if token already used but user verified → returns success)
+
 ## Documentation
 
 Additional documentation in `docs/`:
@@ -531,3 +547,5 @@ Additional documentation in `docs/`:
 - `FRONTEND_EMAIL_VERIFICATION.md` - Frontend integration guide
 - `DASHBOARD_STATS_API.md` - Admin statistics endpoint
 - `POPULAR_ITEMS_SUGGESTIONS_PLAN.md` - Algorithm details
+- `SESSION_RECAP_2026-01-28_to_02-02.md` - Safari/iOS fixes and session context
+- `DEMO_FIXES_RECAP.md` - Fixes to apply to demo project

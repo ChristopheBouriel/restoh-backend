@@ -541,6 +541,8 @@ Error responses include actionable codes:
 | `AUTH_NO_REFRESH_TOKEN` | No refresh cookie | Redirect to login |
 | `AUTH_INVALID_REFRESH_TOKEN` | Token revoked | Redirect to login |
 | `AUTH_EMAIL_NOT_VERIFIED` | Email unverified | Show verification prompt |
+| `UNPAID_CASH_ORDERS` | Cash orders in preparation | Block account deletion |
+| `ACTIVE_RESERVATIONS_WARNING` | Active reservations | Show confirmation prompt |
 | `VALIDATION_ERROR` | Invalid input | Display field errors |
 | `RATE_LIMIT_EXCEEDED` | Too many requests | Show retry message |
 
