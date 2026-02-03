@@ -10,11 +10,33 @@
 - Tous les navigateurs affectés (Safari, Chrome, Firefox, Opera)
 - Tous les appareils Apple affectés (iPhone, iPad, Mac)
 - Fonctionne en Thaïlande mais pas au Laos
-- Les appareils non-Apple sur le même réseau fonctionnent (à vérifier)
+- **IMPORTANT : Les appareils Android et PC Windows sur le MÊME réseau Wi-Fi fonctionnent**
+- Messages d'erreur :
+  - Safari : "Safari ne peut pas ouvrir la page car aucune connexion sécurisée au serveur n'a pu être établie"
+  - Firefox : `NSURLErrorDomain`
+  - Chrome : Timeout
+- Cloudflare WARP ne peut pas se connecter non plus ("périphérique n'a pas pu établir de connexion")
 
 ---
 
 ## Causes Probables
+
+### HYPOTHÈSE PRINCIPALE : IPv6 "Happy Eyeballs" Défaillant
+
+Le fait que **Android/PC fonctionnent mais pas Apple sur le même réseau** pointe vers une différence dans la gestion IPv6/IPv4 :
+
+**"Happy Eyeballs"** est l'algorithme qu'Apple utilise pour choisir entre IPv6 et IPv4 :
+1. Apple préfère IPv6 et essaie d'abord en IPv6
+2. Si IPv6 échoue, il devrait basculer vers IPv4
+3. **MAIS** : Si le réseau a une configuration IPv6 "cassée" (IPv6 annoncé mais non fonctionnel vers Internet), Apple peut rester bloqué
+
+**Pourquoi Android/Windows fonctionnent** : Ils ont des implémentations différentes de Happy Eyeballs, souvent plus agressives pour basculer vers IPv4.
+
+**Sources** :
+- [Apple Developer Forums - Happy Eyeball broken in iOS 16](https://developer.apple.com/forums/thread/739087)
+- [APNIC - Revisiting Apple and IPv6](https://blog.apnic.net/2015/07/15/revisiting-apple-and-ipv6/)
+
+---
 
 ### 1. Fonctionnalités de Confidentialité Apple Combinées
 
@@ -65,6 +87,48 @@ Le Laos n'est pas dans cette liste, mais le comportement peut être imprévisibl
 ---
 
 ## Solutions (Par Ordre de Priorité)
+
+### Solution 0 : Forcer IPv4 (NOUVELLE PISTE PRIORITAIRE)
+
+Si le problème est lié à IPv6, forcer l'utilisation d'IPv4 devrait résoudre le problème.
+
+#### Sur iPhone / iPad
+
+**Option A - Désactiver IPv6 dans les paramètres Wi-Fi** :
+```
+Réglages → Wi-Fi → (i) à côté du réseau → Configurer IP → Manuel
+```
+Entrer manuellement une IP IPv4 (demander au routeur ou utiliser DHCP puis noter l'IP).
+
+**Option B - Utiliser un DNS IPv4 uniquement** :
+```
+Réglages → Wi-Fi → (i) → Configurer le DNS → Manuel
+```
+Supprimer tous les serveurs DNS existants et ajouter uniquement :
+- `8.8.8.8`
+- `8.8.4.4`
+
+#### Sur Mac
+
+**Désactiver IPv6 complètement** :
+```
+Réglages Système → Réseau → Wi-Fi → Détails → TCP/IP
+→ Configurer IPv6 → "Lien local uniquement" (ou "Link-local only")
+```
+
+**Ou via Terminal** :
+```bash
+sudo networksetup -setv6off Wi-Fi
+```
+
+Pour réactiver plus tard :
+```bash
+sudo networksetup -setv6automatic Wi-Fi
+```
+
+**Source** : [Apple Community - IPv6 disabling](https://discussions.apple.com/thread/255764220)
+
+---
 
 ### Solution 1 : Désactiver TOUTES les Fonctionnalités de Confidentialité Apple
 
@@ -229,13 +293,35 @@ Si ça fonctionne mais pas le frontend, le problème est spécifique à Cloudfla
 
 ## Notes de Session
 
-**À vérifier après tests** :
-- [ ] Private Relay désactivé résout le problème ?
-- [ ] DNS manuel résout le problème ?
-- [ ] App 1.1.1.1 résout le problème ?
-- [ ] Problème uniquement sur Wi-Fi ou aussi en cellulaire ?
-- [ ] Quel navigateur/appareil testé ?
+**Tests effectués le 3 février 2026** :
+- [x] Private Relay désactivé → **Aucun effet**
+- [x] Limit IP Address Tracking désactivé → **Aucun effet**
+- [x] Private Wi-Fi Address désactivé → **Aucun effet**
+- [x] Données cellulaires (pas Wi-Fi) → **Même problème**
+- [x] App 1.1.1.1 avec WARP → **WARP ne peut pas se connecter**
+- [ ] **À TESTER : Désactiver IPv6 (Solution 0)**
+- [ ] **À TESTER : DNS manuel IPv4 only**
+
+**Observations clés** :
+- Android et PC Windows fonctionnent sur le même réseau Wi-Fi
+- Le backend Render directement (`restoh-backend.onrender.com`) ne fonctionne pas non plus
+- Erreur Safari : "connexion sécurisée non établie" = problème TLS/SSL ou réseau
+- Erreur Firefox : `NSURLErrorDomain` = erreur réseau niveau système
+- Chrome : Timeout
+
+**Hypothèse principale** : Le routeur/ISP au Laos annonce IPv6 mais le chemin IPv6 vers Render/Cloudflare est cassé. Apple essaie IPv6 en priorité et échoue. Android/Windows basculent plus vite vers IPv4.
 
 ---
 
-*Document créé le 3 février 2026*
+## Historique des Modifications
+
+| Date | Modification |
+|------|-------------|
+| 3 fév 2026 | Création du document |
+| 3 fév 2026 | Ajout hypothèse IPv6 Happy Eyeballs après recherches approfondies |
+| 3 fév 2026 | Ajout Solution 0 (forcer IPv4) comme priorité |
+| 3 fév 2026 | Mise à jour des tests effectués |
+
+---
+
+*Dernière mise à jour : 3 février 2026*
