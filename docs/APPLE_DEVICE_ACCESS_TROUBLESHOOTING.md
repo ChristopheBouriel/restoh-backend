@@ -295,21 +295,35 @@ Si ça fonctionne mais pas le frontend, le problème est spécifique à Cloudfla
 
 **Tests effectués le 3 février 2026** :
 - [x] Private Relay désactivé → **Aucun effet**
-- [x] Limit IP Address Tracking désactivé → **Aucun effet**
+- [x] Limit IP Address Tracking désactivé → **⚠️ CASSE TOUT - NE PAS FAIRE**
 - [x] Private Wi-Fi Address désactivé → **Aucun effet**
 - [x] Données cellulaires (pas Wi-Fi) → **Même problème**
 - [x] App 1.1.1.1 avec WARP → **WARP ne peut pas se connecter**
-- [ ] **À TESTER : Désactiver IPv6 (Solution 0)**
-- [ ] **À TESTER : DNS manuel IPv4 only**
+- [x] DNS manuel (8.8.8.8) → **A empiré les choses**
+- [x] Reset réseau → **A nécessité de tout reconfigurer**
+
+**⚠️ DÉCOUVERTE CRITIQUE :**
+
+**"Limiter le suivi de l'adresse IP" DOIT rester activé (ON) !**
+
+Cette option fait passer le trafic Safari via les serveurs proxy d'Apple, ce qui contourne le blocage ISP au Laos. La désactiver expose le trafic directement à l'ISP local → bloqué.
+
+**État actuel (après restauration) :**
+| Appareil/Navigateur | Fonctionne ? | Notes |
+|---------------------|--------------|-------|
+| Safari iPhone | ✅ OUI | Avec "Limiter le suivi IP" = ON |
+| Chrome iPhone | ❌ NON | L'option ne s'applique qu'à Safari |
+| Firefox iPhone | ❌ NON | L'option ne s'applique qu'à Safari |
+| Safari Mac | ❌ NON | Option différente sur macOS |
+| Autres navigateurs Mac | ❌ NON | - |
 
 **Observations clés** :
 - Android et PC Windows fonctionnent sur le même réseau Wi-Fi
-- Le backend Render directement (`restoh-backend.onrender.com`) ne fonctionne pas non plus
-- Erreur Safari : "connexion sécurisée non établie" = problème TLS/SSL ou réseau
-- Erreur Firefox : `NSURLErrorDomain` = erreur réseau niveau système
-- Chrome : Timeout
+- Le backend Render directement (`restoh-backend.onrender.com`) ne fonctionne pas (sauf Safari iOS)
+- L'ISP au Laos bloque apparemment Cloudflare Pages et Render
+- Le proxy Apple (via "Limiter le suivi IP") contourne ce blocage pour Safari iOS uniquement
 
-**Hypothèse principale** : Le routeur/ISP au Laos annonce IPv6 mais le chemin IPv6 vers Render/Cloudflare est cassé. Apple essaie IPv6 en priorité et échoue. Android/Windows basculent plus vite vers IPv4.
+**Conclusion** : Le problème est un blocage au niveau de l'ISP au Laos, pas un problème Apple. La fonctionnalité de confidentialité Apple agit comme un VPN de contournement pour Safari uniquement.
 
 ---
 
