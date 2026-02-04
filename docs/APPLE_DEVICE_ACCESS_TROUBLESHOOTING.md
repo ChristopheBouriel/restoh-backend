@@ -327,6 +327,51 @@ Cette option fait passer le trafic Safari via les serveurs proxy d'Apple, ce qui
 
 ---
 
+## SOLUTION FINALE : ProtonVPN (4 février 2026)
+
+Après avoir cassé la configuration qui fonctionnait en essayant de comprendre pourquoi, la solution finale est d'utiliser **ProtonVPN**.
+
+### Installation
+
+1. **Créer un compte** sur [protonvpn.com](https://protonvpn.com) (gratuit)
+2. **Installer sur Mac** : Télécharger depuis le site ou l'App Store
+3. **Installer sur iPhone** : App Store → ProtonVPN
+4. **Se connecter** avec le même compte sur les deux appareils
+
+### Limitation du plan gratuit
+
+- **1 seul appareil connecté à la fois**
+- Pour switcher : déconnecter sur un appareil, connecter sur l'autre
+- Pas de limite sur le nombre d'appareils où l'app est installée
+
+### Astuce : Partage de connexion
+
+Pour couvrir Mac ET iPhone avec une seule connexion VPN :
+
+1. Connecter ProtonVPN sur le Mac
+2. Activer le partage de connexion :
+   ```
+   Réglages Système → Général → Partage → Partage Internet
+   ```
+3. Partager depuis : Wi-Fi (avec VPN actif)
+4. Vers : iPhone (via Wi-Fi ou USB)
+
+Ainsi les deux appareils bénéficient du VPN avec une seule "connexion" ProtonVPN.
+
+### Serveurs recommandés depuis le Laos
+
+- Japon (plus proche, rapide)
+- Singapour
+- Tout serveur disponible sur le plan gratuit
+
+### Résultat
+
+✅ **Tous les navigateurs fonctionnent** (Safari, Chrome, Firefox)
+✅ **Mac et iPhone couverts**
+✅ **Solution stable et fiable**
+
+---
+
 ## Historique des Modifications
 
 | Date | Modification |
@@ -335,7 +380,18 @@ Cette option fait passer le trafic Safari via les serveurs proxy d'Apple, ce qui
 | 3 fév 2026 | Ajout hypothèse IPv6 Happy Eyeballs après recherches approfondies |
 | 3 fév 2026 | Ajout Solution 0 (forcer IPv4) comme priorité |
 | 3 fév 2026 | Mise à jour des tests effectués |
+| 3 fév 2026 | Découverte critique : "Limiter le suivi IP" doit rester ON |
+| 4 fév 2026 | **SOLUTION FINALE** : ProtonVPN fonctionne parfaitement |
 
 ---
 
-*Dernière mise à jour : 3 février 2026*
+## Leçons Apprises
+
+1. **Ne jamais modifier une config qui fonctionne** pour "comprendre pourquoi" - documenter d'abord
+2. **Les paramètres Apple peuvent être instables** - désactiver/réactiver ne garantit pas de revenir à l'état initial
+3. **L'ISP au Laos bloque Cloudflare Pages et Render** - c'est un blocage réseau, pas un problème Apple
+4. **Un VPN commercial est la solution la plus fiable** pour contourner les blocages ISP
+
+---
+
+*Dernière mise à jour : 4 février 2026*
